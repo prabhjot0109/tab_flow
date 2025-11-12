@@ -159,12 +159,14 @@
       requestAnimationFrame(() => {
         state.overlay.style.opacity = '1';
         state.isOverlayVisible = true;
+        
+        // Focus search box AFTER overlay is visible (critical for auto-focus)
+        setTimeout(() => {
+          state.domCache.searchBox.value = '';
+          state.domCache.searchBox.focus();
+        }, 50); // Small delay ensures overlay is fully rendered
       });
     });
-    
-    // Focus search box
-    state.domCache.searchBox.value = '';
-    state.domCache.searchBox.focus();
     
     // Add keyboard listeners
     document.addEventListener('keydown', handleKeyDown);
@@ -439,8 +441,10 @@
       case 'Tab':
         e.preventDefault();
         if (e.shiftKey) {
+          // Shift+Tab: Navigate backwards (like Arrow Up/Left)
           selectPrevious();
         } else {
+          // Tab: Navigate forwards (like Arrow Down/Right)
           selectNext();
         }
         break;
@@ -448,13 +452,13 @@
       case 'ArrowRight':
       case 'ArrowDown':
         e.preventDefault();
-        selectNext();
+        selectNext(); // Same as Tab
         break;
         
       case 'ArrowLeft':
       case 'ArrowUp':
         e.preventDefault();
-        selectPrevious();
+        selectPrevious(); // Same as Shift+Tab
         break;
         
       case 'Delete':
@@ -507,12 +511,29 @@
   }
   
   function handleSearchKeydown(e) {
-    if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
+    // Arrow Down or Tab: Move to next tab
+    if (e.key === 'ArrowDown' || e.key === 'Tab') {
       e.preventDefault();
-      selectNext();
-    } else if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
+      if (e.shiftKey) {
+        // Shift+Tab: Move to previous tab
+        selectPrevious();
+      } else {
+        // Tab or Arrow Down: Move to next tab
+        selectNext();
+      }
+    } 
+    // Arrow Up: Move to previous tab
+    else if (e.key === 'ArrowUp') {
       e.preventDefault();
       selectPrevious();
+    }
+    // Enter: Switch to selected tab
+    else if (e.key === 'Enter') {
+      e.preventDefault();
+      const selectedTab = state.filteredTabs[state.selectedIndex];
+      if (selectedTab) {
+        switchToTab(selectedTab.id);
+      }
     }
   }
   
@@ -520,18 +541,18 @@
   // SELECTION MANAGEMENT
   // ============================================================================
   function selectNext() {
-    const cards = state.domCache.grid.querySelectorAll('.tab-card');
-    if (cards.length === 0) return;
+    // Get current filtered tabs count
+    if (state.filteredTabs.length === 0) return;
     
-    state.selectedIndex = (state.selectedIndex + 1) % cards.length;
+    state.selectedIndex = (state.selectedIndex + 1) % state.filteredTabs.length;
     updateSelection();
   }
   
   function selectPrevious() {
-    const cards = state.domCache.grid.querySelectorAll('.tab-card');
-    if (cards.length === 0) return;
+    // Get current filtered tabs count
+    if (state.filteredTabs.length === 0) return;
     
-    state.selectedIndex = (state.selectedIndex - 1 + cards.length) % cards.length;
+    state.selectedIndex = (state.selectedIndex - 1 + state.filteredTabs.length) % state.filteredTabs.length;
     updateSelection();
   }
   
