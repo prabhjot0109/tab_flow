@@ -552,89 +552,131 @@
     }
   }
   
-  function handleSearchKeydown(e) {
-    try {
-      // Allow Backspace to work normally for text editing
-      if (e.key === 'Backspace') {
-        // Don't prevent default - let it delete text naturally
-        return;
-      }
-      
-      // Delete key: Close selected tab even from search box
-      if (e.key === 'Delete') {
-        e.preventDefault();
-        if (state.filteredTabs.length > 0 && state.selectedIndex >= 0 && state.selectedIndex < state.filteredTabs.length) {
-          const tab = state.filteredTabs[state.selectedIndex];
-          if (tab && tab.id) {
-            closeTab(tab.id, state.selectedIndex);
-          }
-        }
-        return;
-      }
-      
-      // Arrow Down or Tab: Move to next tab
-      if (e.key === 'ArrowDown' || e.key === 'Tab') {
-        e.preventDefault();
-        if (e.shiftKey) {
-          // Shift+Tab: Move to previous tab
-          selectPrevious();
-        } else {
-          // Tab or Arrow Down: Move to next tab
-          selectNext();
-        }
-      } 
-      // Arrow Up: Move to previous tab
-      else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        selectPrevious();
-      }
-      // Enter: Switch to selected tab
-      else if (e.key === 'Enter') {
-        e.preventDefault();
-        if (state.filteredTabs.length > 0 && state.selectedIndex >= 0 && state.selectedIndex < state.filteredTabs.length) {
-          const selectedTab = state.filteredTabs[state.selectedIndex];
-          if (selectedTab && selectedTab.id) {
-            switchToTab(selectedTab.id);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('[TAB SWITCHER] Error in handleSearchKeydown:', error);
-    }
-  }
+   function handleSearchKeydown(e) {
+     try {
+       // Allow Backspace to work normally for text editing
+       if (e.key === 'Backspace') {
+         // Don't prevent default - let it delete text naturally
+         return;
+       }
+       
+       // Delete key: Close selected tab even from search box
+       if (e.key === 'Delete') {
+         e.preventDefault();
+         if (state.filteredTabs.length > 0 && state.selectedIndex >= 0 && state.selectedIndex < state.filteredTabs.length) {
+           const tab = state.filteredTabs[state.selectedIndex];
+           if (tab && tab.id) {
+             closeTab(tab.id, state.selectedIndex);
+           }
+         }
+         return;
+       }
+       
+       // Tab key: Navigate (Shift+Tab goes backward, Tab goes forward)
+       if (e.key === 'Tab') {
+         e.preventDefault();
+         if (e.shiftKey) {
+           // Shift+Tab: Move to previous tab
+           selectPrevious();
+         } else {
+           // Tab: Move to next tab
+           selectNext();
+         }
+         return;
+       }
+       
+       // Arrow Down: Move to next tab
+       if (e.key === 'ArrowDown') {
+         e.preventDefault();
+         selectNext();
+         return;
+       }
+       
+       // Arrow Up: Move to previous tab
+       if (e.key === 'ArrowUp') {
+         e.preventDefault();
+         selectPrevious();
+         return;
+       }
+       
+       // Arrow Right: Move to next tab
+       if (e.key === 'ArrowRight') {
+         e.preventDefault();
+         selectNext();
+         return;
+       }
+       
+       // Arrow Left: Move to previous tab
+       if (e.key === 'ArrowLeft') {
+         e.preventDefault();
+         selectPrevious();
+         return;
+       }
+       
+       // Enter: Switch to selected tab
+       if (e.key === 'Enter') {
+         e.preventDefault();
+         if (state.filteredTabs.length > 0 && state.selectedIndex >= 0 && state.selectedIndex < state.filteredTabs.length) {
+           const selectedTab = state.filteredTabs[state.selectedIndex];
+           if (selectedTab && selectedTab.id) {
+             switchToTab(selectedTab.id);
+           }
+         }
+         return;
+       }
+     } catch (error) {
+       console.error('[TAB SWITCHER] Error in handleSearchKeydown:', error);
+     }
+   }
   
-  // ============================================================================
-  // SELECTION MANAGEMENT
-  // ============================================================================
-  function selectNext() {
-    try {
-      // Get current filtered tabs count
-      if (!state.filteredTabs || state.filteredTabs.length === 0) {
-        console.warn('[TAB SWITCHER] No tabs available for navigation');
-        return;
-      }
-      
-      state.selectedIndex = (state.selectedIndex + 1) % state.filteredTabs.length;
-      updateSelection();
-    } catch (error) {
-      console.error('[TAB SWITCHER] Error in selectNext:', error);
-    }
-  }
-  
-  function selectPrevious() {
-    try {
-      // Get current filtered tabs count
-      if (!state.filteredTabs || state.filteredTabs.length === 0) {
-        console.warn('[TAB SWITCHER] No tabs available for navigation');
-        return;
-      }
-      
-      state.selectedIndex = (state.selectedIndex - 1 + state.filteredTabs.length) % state.filteredTabs.length;
-      updateSelection();
-    } catch (error) {
-      console.error('[TAB SWITCHER] Error in selectPrevious:', error);
-    }
-  }
+   // ============================================================================
+   // SELECTION MANAGEMENT
+   // ============================================================================
+   function selectNext() {
+     try {
+       // Get current filtered tabs count
+       if (!state.filteredTabs || state.filteredTabs.length === 0) {
+         console.warn('[TAB SWITCHER] No tabs available for navigation');
+         return;
+       }
+       
+       // Ensure selectedIndex is within valid range before incrementing
+       if (state.selectedIndex < 0 || state.selectedIndex >= state.filteredTabs.length) {
+         state.selectedIndex = 0;
+       } else {
+         state.selectedIndex = state.selectedIndex + 1;
+         if (state.selectedIndex >= state.filteredTabs.length) {
+           state.selectedIndex = 0; // Wrap around to first tab
+         }
+       }
+       updateSelection();
+     } catch (error) {
+       console.error('[TAB SWITCHER] Error in selectNext:', error);
+     }
+   }
+   
+   function selectPrevious() {
+     try {
+       // Get current filtered tabs count
+       if (!state.filteredTabs || state.filteredTabs.length === 0) {
+         console.warn('[TAB SWITCHER] No tabs available for navigation');
+         return;
+       }
+       
+       // Ensure selectedIndex is within valid range before decrementing
+       if (state.selectedIndex < 0 || state.selectedIndex >= state.filteredTabs.length) {
+         state.selectedIndex = state.filteredTabs.length - 1;
+       } else {
+         state.selectedIndex = state.selectedIndex - 1;
+         if (state.selectedIndex < 0) {
+           state.selectedIndex = state.filteredTabs.length - 1; // Wrap around to last tab
+         }
+       }
+       updateSelection();
+     } catch (error) {
+       console.error('[TAB SWITCHER] Error in selectPrevious:', error);
+     }
+   }
   
   function updateSelection() {
     try {
