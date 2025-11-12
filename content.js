@@ -560,6 +560,18 @@
         return;
       }
       
+      // Delete key: Close selected tab even from search box
+      if (e.key === 'Delete') {
+        e.preventDefault();
+        if (state.filteredTabs.length > 0 && state.selectedIndex >= 0 && state.selectedIndex < state.filteredTabs.length) {
+          const tab = state.filteredTabs[state.selectedIndex];
+          if (tab && tab.id) {
+            closeTab(tab.id, state.selectedIndex);
+          }
+        }
+        return;
+      }
+      
       // Arrow Down or Tab: Move to next tab
       if (e.key === 'ArrowDown' || e.key === 'Tab') {
         e.preventDefault();
