@@ -98,11 +98,10 @@
     const helpText = document.createElement('div');
     helpText.className = 'tab-switcher-help';
     helpText.innerHTML = `
-      <span><kbd>Tab</kbd> or <kbd>Arrow Keys</kbd> to navigate</span>
-      <span><kbd>Enter</kbd> to switch</span>
-      <span><kbd>Esc</kbd> to close</span>
-      <span><kbd>Delete</kbd> to close tab</span>
-      <span class="help-note">💡 Optimized for 100+ tabs with virtual scrolling</span>
+      <span><kbd>↑</kbd> <kbd>↓</kbd> <kbd>Tab</kbd> Navigate</span>
+      <span><kbd>Enter</kbd> Switch</span>
+      <span><kbd>Delete</kbd> Close Tab</span>
+      <span><kbd>Esc</kbd> Exit</span>
     `;
     container.appendChild(helpText);
     
