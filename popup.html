@@ -5,6 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Visual Tab Switcher</title>
     <style>
+      :root {
+        --bg: #0b0f14;
+        --surface: #121720;
+        --card: #141b26;
+        --text: #e5e7eb;
+        --muted: #9aa4b2;
+        --border: #454545;
+        --accent: #0ea5e9; /* subtle cyan */
+        --accent-strong: #0284c7;
+        --radius: 10px;
+        --shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+        --gap: 12px;
+      }
+
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #ffffff;
+          --surface: #f8fafc;
+          --card: #f1f5f9;
+          --text: #0f172a;
+          --muted: #475569;
+          --border: #e2e8f0;
+          --accent: #2563eb;
+          --accent-strong: #1d4ed8;
+          --shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+        }
+      }
+
       * {
         margin: 0;
         padding: 0;
@@ -12,37 +40,47 @@
       }
 
       body {
-        width: 350px;
-        padding: 20px;
+        width: 360px;
+        padding: 18px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           "Helvetica Neue", Arial, sans-serif;
-        background: #1e1e1e;
-        color: #ffffff;
+        background: var(--bg);
+        color: var(--text);
       }
 
       h1 {
-        font-size: 20px;
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: var(--text);
+      }
+
+      .tagline {
+        font-size: 12px;
+        color: var(--muted);
         margin-bottom: 16px;
-        color: #007acc;
       }
 
       .section {
-        margin-bottom: 20px;
+        margin-bottom: 16px;
       }
 
       .section h2 {
-        font-size: 14px;
-        margin-bottom: 10px;
-        color: #cccccc;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: var(--muted);
+        margin-bottom: 8px;
       }
 
       .shortcut {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 10px;
-        background: #2d2d2d;
-        border-radius: 6px;
+        padding: 10px 12px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
         margin-bottom: 8px;
       }
 
@@ -51,30 +89,33 @@
       }
 
       kbd {
-        background: #404040;
-        border: 1px solid #555;
-        border-radius: 4px;
+        background: color-mix(in oklab, var(--card) 85%, var(--text) 15%);
+        border: 1px solid var(--border);
+        border-radius: 6px;
         padding: 3px 8px;
-        font-family: monospace;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", monospace;
         font-size: 12px;
-        color: #fff;
+        color: var(--text);
+        box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.1);
       }
 
       .info {
-        background: #2d2d2d;
+        background: var(--surface);
         padding: 12px;
-        border-radius: 6px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
         font-size: 12px;
         line-height: 1.6;
-        color: #cccccc;
+        color: var(--muted);
       }
 
       .info strong {
-        color: #ffffff;
+        color: var(--text);
       }
 
       .link {
-        color: #007acc;
+        color: var(--accent);
         text-decoration: none;
         font-size: 12px;
       }
@@ -85,45 +126,51 @@
 
       .button {
         width: 100%;
-        padding: 10px;
-        background: #007acc;
-        border: none;
-        border-radius: 6px;
-        color: #ffffff;
+        padding: 10px 12px;
+        background: var(--accent);
+        border: 1px solid transparent;
+        border-radius: var(--radius);
+        color: white;
         font-size: 14px;
-        font-weight: 500;
+        font-weight: 600;
         cursor: pointer;
-        transition: background 0.2s;
+        transition: background 0.2s ease, transform 0.06s ease;
         margin-top: 12px;
+        box-shadow: var(--shadow);
       }
 
       .button:hover {
-        background: #006bb3;
+        background: var(--accent-strong);
+      }
+      .button:active {
+        transform: translateY(1px);
       }
 
       .feature-list {
         list-style: none;
-        padding: 12px;
-        background: #2d2d2d;
-        border-radius: 6px;
+        padding: 10px 12px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
       }
 
       .feature-list li {
         padding: 6px 0;
         font-size: 12px;
-        color: #cccccc;
+        color: var(--muted);
       }
 
       .feature-list li:before {
         content: "✓ ";
-        color: #007acc;
-        font-weight: bold;
+        color: var(--accent);
+        font-weight: 700;
         margin-right: 8px;
       }
     </style>
   </head>
   <body>
     <h1>Visual Tab Switcher</h1>
+    <div class="tagline">Fast, minimal tab previews with keyboard flow.</div>
 
     <div class="section">
       <h2>📋 Default Shortcuts</h2>
