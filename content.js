@@ -8,6 +8,473 @@
 (function() {
   'use strict';
   
+  const SHADOW_HOST_ID = 'tab-switcher-host';
+  const SHADOW_CSS = `/* Visual Tab Switcher Overlay Styles */
+/* ============================================================================ */
+/* PERFORMANCE-OPTIMIZED with GPU ACCELERATION */
+/* All animations use transform3d for hardware acceleration */
+/* will-change hints for critical animation elements */
+/* Target: 60fps animations, zero jank */
+/* ============================================================================ */
+
+/* Remove default focus outlines - we use custom selection styles */
+.tab-switcher-overlay *:focus {
+  outline: none;
+}
+
+/* Overlay container - GPU accelerated */
+.tab-switcher-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2147483647;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  animation: fadeIn 0.2s ease-out;
+  will-change: opacity;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Backdrop - GPU accelerated blur */
+.tab-switcher-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(5px);
+  will-change: opacity;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Main container - GPU accelerated transform */
+.tab-switcher-container {
+  position: relative;
+  background: #1e1e1e;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 90vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: slideIn 0.3s ease-out;
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Search box */
+.tab-switcher-search {
+  width: 100%;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  background: #2d2d2d;
+  border: 2px solid #404040;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.tab-switcher-search:focus {
+  border-color: #007acc;
+  outline: none;
+}
+
+.tab-switcher-search::placeholder {
+  color: #888;
+}
+
+/* Grid container */
+.tab-switcher-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  max-height: 60vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 8px;
+  margin: 0 -8px;
+  outline: none;
+}
+
+.tab-switcher-grid:focus {
+  outline: none;
+}
+
+/* Scrollbar styling */
+.tab-switcher-grid::-webkit-scrollbar {
+  width: 10px;
+}
+
+.tab-switcher-grid::-webkit-scrollbar-track {
+  background: #2d2d2d;
+  border-radius: 5px;
+}
+
+.tab-switcher-grid::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 5px;
+}
+
+.tab-switcher-grid::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+/* Tab card - GPU accelerated hover effects */
+.tab-card {
+  background: #2d2d2d;
+  border: 2px solid #404040;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  will-change: transform, box-shadow;
+  transform: translate3d(0, 0, 0);
+}
+
+.tab-card:hover {
+  transform: translate3d(0, -4px, 0);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  border-color: #555;
+}
+
+.tab-card.selected {
+  border-color: #007acc;
+  box-shadow: 0 0 0 3px rgba(0, 122, 204, 0.3);
+  transform: translate3d(0, -4px, 0);
+}
+
+/* Visual distinction for favicon tiles */
+.tab-card.has-favicon {
+  border-style: dashed;
+  border-color: #505050;
+}
+
+.tab-card.has-favicon:hover {
+  border-color: #606060;
+}
+
+.tab-card.has-favicon.selected {
+  border-style: solid;
+  border-color: #007acc;
+}
+
+.tab-card.pinned::before {
+  content: '📌';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 10;
+  font-size: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+/* Thumbnail */
+.tab-thumbnail {
+  width: 100%;
+  height: 160px;
+  background: #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.tab-thumbnail img.screenshot-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.3s ease;
+}
+
+/* Favicon tile styling */
+.favicon-tile {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+  position: relative;
+}
+
+/* Large favicon display - GPU accelerated scale */
+.favicon-large {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+  transition: transform 0.2s ease;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+.tab-card:hover .favicon-large {
+  transform: translate3d(0, 0, 0) scale(1.1);
+}
+
+/* Letter fallback for missing favicons - GPU accelerated */
+.favicon-letter {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #007acc 0%, #005a9e 100%);
+  border-radius: 50%;
+  font-size: 40px;
+  font-weight: bold;
+  color: #ffffff;
+  text-transform: uppercase;
+  box-shadow: 0 4px 12px rgba(0, 122, 204, 0.4);
+  transition: transform 0.2s ease;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+.tab-card:hover .favicon-letter {
+  transform: translate3d(0, 0, 0) scale(1.1);
+}
+
+.tab-thumbnail .no-screenshot {
+  color: #888;
+  font-size: 14px;
+  text-align: center;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.placeholder-icon {
+  font-size: 48px;
+  opacity: 0.5;
+  margin-bottom: 8px;
+}
+
+.placeholder-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #aaa;
+}
+
+.placeholder-hint {
+  font-size: 11px;
+  color: #666;
+  line-height: 1.4;
+  max-width: 200px;
+}
+
+/* Tab info */
+.tab-info {
+  padding: 12px;
+}
+
+/* Adjust padding for favicon tiles (more space for title) */
+.tab-card.has-favicon .tab-info {
+  padding: 16px 12px;
+}
+
+.tab-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+/* Enlarge title for favicon tiles */
+.tab-card.has-favicon .tab-header {
+  justify-content: center;
+  margin-bottom: 0;
+}
+
+.tab-favicon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.tab-title {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+/* Larger, centered title for favicon tiles */
+.tab-card.has-favicon .tab-title {
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+  flex: none;
+  max-width: 100%;
+}
+
+.tab-url {
+  color: #888;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Close button - GPU accelerated */
+.tab-close-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s, background-color 0.2s;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
+}
+
+.tab-card:hover .tab-close-btn,
+.tab-card.selected .tab-close-btn {
+  opacity: 1;
+}
+
+.tab-close-btn:hover {
+  background: #e74c3c;
+  transform: translate3d(0, 0, 0) scale(1.1);
+}
+
+/* Help text */
+.tab-switcher-help {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #404040;
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  color: #aaa;
+  font-size: 13px;
+}
+
+.tab-switcher-help span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab-switcher-help kbd {
+  background: linear-gradient(180deg, #3a3a3a 0%, #2d2d2d 100%);
+  border: 1px solid #555;
+  border-bottom: 2px solid #666;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  min-width: 24px;
+  text-align: center;
+}
+
+.tab-switcher-help .help-note {
+  color: #666;
+  font-size: 11px;
+  font-style: italic;
+}
+
+/* Animations - GPU accelerated */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translate3d(0, 0, 0) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .tab-switcher-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .tab-switcher-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  
+  .tab-switcher-container {
+    padding: 16px;
+  }
+  
+  .tab-thumbnail {
+    height: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab-switcher-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .tab-switcher-help {
+    font-size: 11px;
+    gap: 10px;
+  }
+}
+
+/* Handle multiple windows */
+.tab-window-separator {
+  grid-column: 1 / -1;
+  padding: 12px 0;
+  color: #888;
+  font-size: 14px;
+  font-weight: 600;
+  border-top: 1px solid #404040;
+  margin-top: 8px;
+}`;
+  
   // ============================================================================
   // STATE MANAGEMENT
   // ============================================================================
@@ -17,6 +484,9 @@
     filteredTabs: [],
     selectedIndex: 0,
     isOverlayVisible: false,
+    host: null,
+    shadowRoot: null,
+    styleElement: null,
     
     // DOM cache
     domCache: {
@@ -57,11 +527,46 @@
   // ============================================================================
   // OVERLAY CREATION
   // ============================================================================
+  function ensureShadowRoot() {
+    try {
+      if (!state.host) {
+        const existingHost = document.getElementById(SHADOW_HOST_ID);
+        if (existingHost) {
+          state.host = existingHost;
+        } else {
+          const host = document.createElement('div');
+          host.id = SHADOW_HOST_ID;
+          document.body.appendChild(host);
+          state.host = host;
+        }
+      }
+      if (!state.shadowRoot) {
+        if (state.host.shadowRoot) {
+          state.shadowRoot = state.host.shadowRoot;
+        } else {
+          state.shadowRoot = state.host.attachShadow({ mode: 'open' });
+        }
+      }
+      if (!state.styleElement || !state.shadowRoot.contains(state.styleElement)) {
+        const style = document.createElement('style');
+        style.textContent = SHADOW_CSS;
+        state.shadowRoot.appendChild(style);
+        state.styleElement = style;
+      }
+      return state.shadowRoot;
+    } catch (error) {
+      console.error('[TAB SWITCHER] Failed to initialize shadow root:', error);
+      return null;
+    }
+  }
+  
   function createOverlay() {
     if (state.overlay) return;
     
-    // Use DocumentFragment for efficient DOM construction
-    const fragment = document.createDocumentFragment();
+    const shadowRoot = ensureShadowRoot();
+    if (!shadowRoot) {
+      return;
+    }
     
     // Create overlay container
     const overlay = document.createElement('div');
@@ -121,7 +626,7 @@
     state.overlay = overlay;
     state.domCache = { grid, searchBox, container };
     
-    document.body.appendChild(overlay);
+    shadowRoot.appendChild(overlay);
     
     console.log('[PERF] Overlay created with GPU acceleration and event delegation');
   }

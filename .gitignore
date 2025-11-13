@@ -3,9 +3,6 @@
 *.pem
 *.zip
 
-# Icons (generated files - keep the generator)
-icons/*.png
-
 # Development
 .DS_Store
 Thumbs.db
