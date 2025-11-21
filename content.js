@@ -1188,13 +1188,83 @@ kbd {
     };
   }
 
+  // Fuzzy match scoring
+  function fuzzyMatch(text, query) {
+    // Simple "characters in order" matcher with scoring
+    // Returns { match: boolean, score: number }
+
+    if (!text) return { match: false, score: 0 };
+
+    const t = text.toLowerCase();
+    const q = query.toLowerCase();
+
+    if (q.length === 0) return { match: true, score: 1 };
+    if (t === q) return { match: true, score: 100 };
+
+    // Exact substring matches get high priority
+    if (t.startsWith(q))
+      return { match: true, score: 80 + (q.length / t.length) * 10 };
+    if (t.includes(q))
+      return { match: true, score: 50 + (q.length / t.length) * 10 };
+
+    let tIdx = 0;
+    let qIdx = 0;
+    let score = 0;
+    let consecutive = 0;
+    let firstMatchIdx = -1;
+
+    while (tIdx < t.length && qIdx < q.length) {
+      if (t[tIdx] === q[qIdx]) {
+        if (firstMatchIdx === -1) firstMatchIdx = tIdx;
+
+        // Base score for match
+        let charScore = 1;
+
+        // Bonus for consecutive matches
+        if (consecutive > 0) {
+          charScore += 2 + consecutive; // Increasing bonus for longer runs
+        }
+
+        // Bonus for start of word (after space or start of string)
+        if (
+          tIdx === 0 ||
+          t[tIdx - 1] === " " ||
+          t[tIdx - 1] === "." ||
+          t[tIdx - 1] === "/" ||
+          t[tIdx - 1] === "-"
+        ) {
+          charScore += 3;
+        }
+
+        score += charScore;
+        consecutive++;
+        qIdx++;
+      } else {
+        consecutive = 0;
+      }
+      tIdx++;
+    }
+
+    // Must match all characters in query
+    if (qIdx < q.length) return { match: false, score: 0 };
+
+    // Penalty for total length difference (prefer shorter matches)
+    score -= (t.length - q.length) * 0.1;
+
+    // Penalty for late start
+    if (firstMatchIdx > 0) score -= firstMatchIdx * 0.5;
+
+    return { match: true, score: Math.max(1, score) };
+  }
+
   function handleSearch(e) {
     try {
       const rawVal =
         e && e.target && typeof e.target.value === "string"
           ? e.target.value
           : state.domCache?.searchBox?.value ?? "";
-      const query = String(rawVal).toLowerCase().trim();
+      const query = String(rawVal).trim();
+
       // '.' quick toggle
       const isDeleteBackward = !!(
         e &&
@@ -1224,12 +1294,26 @@ kbd {
         return;
       }
 
-      // Filter tabs
-      const filtered = state.currentTabs.filter((item) => {
-        const title = (item.title || "").toLowerCase();
-        const url = (item.url || "").toLowerCase();
-        return title.includes(query) || url.includes(query);
+      // Filter and Sort tabs using fuzzy match
+      const scoredTabs = state.currentTabs.map((tab) => {
+        const titleMatch = fuzzyMatch(tab.title, query);
+        const urlMatch = fuzzyMatch(tab.url, query);
+
+        // Take the best match
+        const bestMatch =
+          titleMatch.score > urlMatch.score ? titleMatch : urlMatch;
+
+        return {
+          tab,
+          match: bestMatch.match,
+          score: bestMatch.score,
+        };
       });
+
+      const filtered = scoredTabs
+        .filter((item) => item.match)
+        .sort((a, b) => b.score - a.score)
+        .map((item) => item.tab);
 
       state.filteredTabs = filtered;
       state.selectedIndex = 0;

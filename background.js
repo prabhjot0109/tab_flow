@@ -7,6 +7,93 @@
 // ============================================================================
 // LRU CACHE IMPLEMENTATION
 // ============================================================================
+// ============================================================================
+// INDEXEDDB STORAGE WRAPPER
+// ============================================================================
+class SimpleIDB {
+  constructor(dbName, storeName) {
+    this.dbName = dbName;
+    this.storeName = storeName;
+    this.db = null;
+    this.initPromise = this._open();
+  }
+
+  _open() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(this.dbName, 1);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        this.db = request.result;
+        resolve(this.db);
+      };
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains(this.storeName)) {
+          db.createObjectStore(this.storeName);
+        }
+      };
+    });
+  }
+
+  async getAll() {
+    await this.initPromise;
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.storeName], "readonly");
+      const store = transaction.objectStore(this.storeName);
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async getAllKeys() {
+    await this.initPromise;
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.storeName], "readonly");
+      const store = transaction.objectStore(this.storeName);
+      const request = store.getAllKeys();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async set(key, value) {
+    await this.initPromise;
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.storeName], "readwrite");
+      const store = transaction.objectStore(this.storeName);
+      const request = store.put(value, key);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async delete(key) {
+    await this.initPromise;
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.storeName], "readwrite");
+      const store = transaction.objectStore(this.storeName);
+      const request = store.delete(key);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async clear() {
+    await this.initPromise;
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction([this.storeName], "readwrite");
+      const store = transaction.objectStore(this.storeName);
+      const request = store.clear();
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+}
+
+// ============================================================================
+// LRU CACHE IMPLEMENTATION (WITH PERSISTENCE)
+// ============================================================================
 class LRUCache {
   constructor(maxTabs = 30, maxBytes = 20 * 1024 * 1024) {
     this.cache = new Map(); // Map for O(1) access
@@ -14,6 +101,40 @@ class LRUCache {
     this.maxBytes = maxBytes;
     this.currentBytes = 0;
     this.accessOrder = []; // Track access order for LRU
+
+    // Persistence
+    this.storage = new SimpleIDB("TabSwitcherDB", "screenshots");
+    this.ready = this._restoreFromStorage();
+  }
+
+  // Restore cache from IndexedDB on startup
+  async _restoreFromStorage() {
+    try {
+      const keys = await this.storage.getAllKeys();
+      if (keys.length === 0) return;
+
+      const values = await this.storage.getAll();
+
+      // Reconstruct cache
+      keys.forEach((key, index) => {
+        const value = values[index];
+        if (value && value.data) {
+          this.cache.set(key, value);
+          this.currentBytes += value.size;
+        }
+      });
+
+      // Reconstruct access order based on timestamps (descending)
+      this.accessOrder = Array.from(this.cache.entries())
+        .sort((a, b) => b[1].timestamp - a[1].timestamp)
+        .map((entry) => entry[0]);
+
+      console.log(
+        `[CACHE] Restored ${this.cache.size} screenshots from storage`
+      );
+    } catch (error) {
+      console.error("[CACHE] Failed to restore from storage:", error);
+    }
   }
 
   // Get item and mark as recently used
@@ -24,7 +145,14 @@ class LRUCache {
     this.accessOrder = this.accessOrder.filter((k) => k !== key);
     this.accessOrder.unshift(key);
 
-    return this.cache.get(key);
+    // Update timestamp in background for persistence
+    const entry = this.cache.get(key);
+    entry.timestamp = Date.now();
+    this.storage
+      .set(key, entry)
+      .catch((e) => console.warn("Failed to update timestamp", e));
+
+    return entry;
   }
 
   // Set item with automatic eviction
@@ -47,12 +175,18 @@ class LRUCache {
     }
 
     // Add new entry
-    this.cache.set(key, { data: value, size, timestamp: Date.now() });
+    const entry = { data: value, size, timestamp: Date.now() };
+    this.cache.set(key, entry);
     this.currentBytes += size;
 
     // Update access order
     this.accessOrder = this.accessOrder.filter((k) => k !== key);
     this.accessOrder.unshift(key);
+
+    // Persist to storage
+    this.storage
+      .set(key, entry)
+      .catch((e) => console.error("Failed to persist screenshot", e));
   }
 
   // Remove specific entry
@@ -63,6 +197,11 @@ class LRUCache {
     this.currentBytes -= entry.size;
     this.cache.delete(key);
     this.accessOrder = this.accessOrder.filter((k) => k !== key);
+
+    // Remove from storage
+    this.storage
+      .delete(key)
+      .catch((e) => console.error("Failed to delete screenshot", e));
 
     return true;
   }
@@ -77,6 +216,10 @@ class LRUCache {
     if (entry) {
       this.currentBytes -= entry.size;
       this.cache.delete(lruKey);
+      this.storage
+        .delete(lruKey)
+        .catch((e) => console.warn("Failed to evict from storage", e));
+
       console.debug(
         `[LRU] Evicted tab ${lruKey} (${(entry.size / 1024).toFixed(1)}KB)`
       );
@@ -107,6 +250,9 @@ class LRUCache {
     this.cache.clear();
     this.accessOrder = [];
     this.currentBytes = 0;
+    this.storage
+      .clear()
+      .catch((e) => console.error("Failed to clear storage", e));
   }
 }
 
@@ -428,6 +574,9 @@ chrome.commands.onCommand.addListener((command) => {
 
 // Handle showing the tab switcher - OPTIMIZED FOR <100ms
 async function handleShowTabSwitcher() {
+  // Ensure cache is restored before querying
+  if (screenshotCache.ready) await screenshotCache.ready;
+
   const startTime = performance.now();
 
   try {
@@ -780,9 +929,9 @@ if (PERF_CONFIG.PERFORMANCE_LOGGING) {
 // INITIALIZATION
 // ============================================================================
 
-// Clear cache on extension load to prevent stale screenshots
-screenshotCache.clear();
-console.log("[INIT] Screenshot cache cleared");
+// Cache is now persistent, so we don't clear it on load.
+// Stale entries will be evicted by LRU policy naturally.
+console.log("[INIT] Visual Tab Switcher initialized");
 
 // Load quality tier setting from storage (defensive to avoid TypeError)
 chrome.storage.local.get(["qualityTier"], (result) => {
