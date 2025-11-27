@@ -9,75 +9,112 @@
   "use strict";
 
   const SHADOW_HOST_ID = "tab-switcher-host";
-  const SHADOW_CSS = `/* Visual Tab Switcher Overlay Styles */
-/* Modern, Minimalist, Solid Design */
+  const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 :host {
-  /* CSS Reset for Shadow DOM */
   all: initial;
   
-  /* Custom Properties */
-  --bg-overlay: rgba(0, 0, 0, 0.85); /* Darker, less transparent backdrop */
-  --bg-surface: #1a1a1a; /* Solid background */
-  --border-subtle: #333333;
-  --text-primary: #ffffff;
-  --text-secondary: #a0a0a0;
-  --accent: #3b82f6;
-  --accent-hover: #2563eb;
-  --card-bg: #262626;
-  --card-hover: #303030;
-  --radius-lg: 12px;
+  /* Dark Theme - Black & Gray */
+  --bg-overlay: rgba(0, 0, 0, 0.85);
+  --bg-surface: #121212;
+  --bg-glass: #1a1a1a;
+  --bg-glass-hover: #222222;
+  --border-subtle: #2a2a2a;
+  --border-hover: #3a3a3a;
+  --border-active: #4a4a4a;
+  --text-primary: #f0f0f0;
+  --text-secondary: #999999;
+  --text-muted: #666666;
+  --accent: #ffffff;
+  --accent-light: #cccccc;
+  --accent-glow: rgba(255, 255, 255, 0.1);
+  --card-bg: #1e1e1e;
+  --card-hover: #282828;
+  --card-selected: #2a2a2a;
+  --danger: #e53935;
+  --success: #43a047;
+  --radius-2xl: 14px;
+  --radius-xl: 12px;
+  --radius-lg: 10px;
   --radius-md: 8px;
-  --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.6);
-  --font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --radius-sm: 4px;
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.3);
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --transition-fast: 0.1s ease;
+  --transition-smooth: 0.15s ease;
 }
 
 @media (prefers-color-scheme: light) {
   :host {
-    --bg-overlay: rgba(255, 255, 255, 0.8);
+    /* Light Theme - White & Gray */
+    --bg-overlay: rgba(100, 100, 100, 0.5);
     --bg-surface: #ffffff;
-    --border-subtle: #e5e7eb;
-    --text-primary: #111827;
-    --text-secondary: #6b7280;
-    --card-bg: #f3f4f6;
-    --card-hover: #e5e7eb;
-    --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.1);
+    --bg-glass: #f8f8f8;
+    --bg-glass-hover: #f0f0f0;
+    --border-subtle: #e0e0e0;
+    --border-hover: #d0d0d0;
+    --border-active: #b0b0b0;
+    --text-primary: #1a1a1a;
+    --text-secondary: #666666;
+    --text-muted: #999999;
+    --accent: #1a1a1a;
+    --accent-light: #444444;
+    --accent-glow: rgba(0, 0, 0, 0.08);
+    --card-bg: #f5f5f5;
+    --card-hover: #eeeeee;
+    --card-selected: #e8e8e8;
+    --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.12);
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
   }
 }
 
+/* Overlay */
 .tab-switcher-overlay {
   position: fixed;
   inset: 0;
   z-index: 2147483647;
   display: none;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: 6vh;
   font-family: var(--font-family);
-  animation: fadeIn 0.15s ease-out;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .tab-switcher-backdrop {
   position: absolute;
   inset: 0;
   background: var(--bg-overlay);
-  backdrop-filter: blur(4px); /* Reduced blur, more solid feel */
-  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  animation: backdropFadeIn 0.2s ease-out;
 }
 
 .tab-switcher-container {
   position: relative;
-  width: 800px;
-  max-width: 90vw;
-  max-height: 85vh;
+  width: 880px;
+  max-width: 94vw;
+  max-height: 80vh;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-xl);
   display: flex;
   flex-direction: column;
   padding: 20px;
   overflow: hidden;
-  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: containerSlideIn 0.2s ease-out;
 }
 
 /* Search Header */
@@ -86,6 +123,7 @@
   align-items: center;
   gap: 12px;
   margin-bottom: 20px;
+  flex-shrink: 0;
 }
 
 .tab-switcher-search-wrap {
@@ -97,102 +135,122 @@
 
 .tab-switcher-search {
   width: 100%;
-  background: var(--card-bg);
+  background: var(--bg-glass);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 12px 16px;
-  padding-left: 44px;
+  border-radius: var(--radius-lg);
+  padding: 14px 18px 14px 52px;
   font-size: 15px;
+  font-weight: 400;
   color: var(--text-primary);
   outline: none;
-  transition: border-color 0.2s, background-color 0.2s;
+  transition: all var(--transition-smooth);
+  letter-spacing: -0.01em;
 }
 
 .tab-switcher-search:focus {
-  background: var(--bg-surface);
+  background: var(--bg-glass-hover);
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-glow), var(--shadow-card);
 }
 
 .tab-switcher-search::placeholder {
-  color: var(--text-secondary);
+  color: var(--text-muted);
+  font-weight: 400;
 }
 
 .search-icon {
   position: absolute;
-  left: 14px;
-  color: var(--text-secondary);
+  left: 18px;
+  color: var(--text-muted);
   pointer-events: none;
   display: flex;
   align-items: center;
+  transition: all var(--transition-fast);
+}
+
+.tab-switcher-search:focus ~ .search-icon,
+.tab-switcher-search-wrap:focus-within .search-icon {
+  color: var(--accent);
+  transform: scale(1.05);
 }
 
 /* Buttons */
 .recently-closed-btn {
-  background: transparent;
+  background: var(--bg-glass);
   border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
-  padding: 12px 16px;
-  border-radius: var(--radius-md);
+  padding: 0 20px;
+  border-radius: var(--radius-lg);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all var(--transition-smooth);
   white-space: nowrap;
-  height: 44px; /* Match search input height */
-  display: flex;
+  height: 50px;
+  display: inline-flex;
   align-items: center;
+  gap: 8px;
+  letter-spacing: -0.01em;
 }
 
 .recently-closed-btn:hover {
-  border-color: var(--text-secondary);
+  background: var(--bg-glass-hover);
+  border-color: var(--border-hover);
   color: var(--text-primary);
-  background: var(--card-bg);
+  transform: translateY(-1px);
+}
+
+.recently-closed-btn:active {
+  transform: translateY(0);
 }
 
 .recent-back-btn {
   position: absolute;
-  left: 8px;
+  left: 10px;
   z-index: 10;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
-  background: var(--card-hover);
+  background: var(--bg-glass-hover);
   color: var(--text-primary);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 16px;
+  font-size: 18px;
+  transition: all var(--transition-fast);
 }
 
 .recent-back-btn:hover {
   background: var(--accent);
   color: white;
+  transform: scale(1.05);
 }
 
-/* Grid */
+/* Grid - Active Tabs */
 .tab-switcher-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 12px;
   overflow-y: auto;
-  padding-right: 4px; /* Space for scrollbar */
+  overflow-x: hidden;
+  padding: 4px;
+  padding-right: 8px;
   min-height: 200px;
+  scroll-behavior: smooth;
 }
 
-/* Web Search Mode Improvements */
-.tab-switcher-grid:has(.tab-card[data-web-search="1"]) {
+/* Recent Mode & Search Mode - Column Layout */
+.tab-switcher-grid.recent-mode,
+.tab-switcher-grid.search-mode {
   display: flex;
   flex-direction: column;
-  min-height: 0; /* Remove minimum height constraint */
-  padding-bottom: 0;
-  padding-right: 0; /* Remove scrollbar padding */
+  gap: 8px;
 }
 
 .tab-switcher-grid::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .tab-switcher-grid::-webkit-scrollbar-track {
@@ -201,63 +259,91 @@
 
 .tab-switcher-grid::-webkit-scrollbar-thumb {
   background: var(--border-subtle);
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 .tab-switcher-grid::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: var(--border-hover);
+}
+
+/* Empty State */
+.tab-switcher-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: center;
 }
 
 /* Tab Card */
 .tab-card {
   background: var(--card-bg);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   cursor: pointer;
-  transition: transform 0.1s ease, border-color 0.1s ease;
   position: relative;
   display: flex;
   flex-direction: column;
   height: 160px;
+  transition: all var(--transition-smooth);
 }
 
 .tab-card:hover {
   transform: translateY(-2px);
-  border-color: var(--border-subtle);
+  border-color: var(--border-hover);
   background: var(--card-hover);
 }
 
 .tab-card.selected {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
-  background: var(--card-hover);
+  background: var(--card-selected);
+  box-shadow: 0 0 0 1px var(--border-active);
 }
 
-/* Web Search Card Specifics */
+.tab-card.selected::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--accent-glow);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Pinned indicator */
+.tab-card.pinned::after {
+  content: '📌';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  font-size: 12px;
+  z-index: 5;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+}
+
+/* Web Search Card */
 .tab-card[data-web-search="1"] {
-  width: 100% !important; /* Force full width */
-  max-width: 100% !important;
-  min-width: 100% !important;
-  height: 64px !important; /* Fixed height for bar look */
-  max-height: 64px !important;
-  min-height: 64px !important;
-  flex-direction: row !important; /* Horizontal layout */
+  width: 100% !important;
+  height: 60px !important;
+  flex-direction: row !important;
   align-items: center !important;
-  padding: 0 16px !important;
-  gap: 12px !important;
-  margin: 0 !important;
-  box-sizing: border-box !important;
+  padding: 0 18px !important;
+  gap: 14px !important;
 }
 
 .tab-card[data-web-search="1"]:hover {
-  transform: none; /* Disable lift effect for bar */
+  transform: translateY(-2px);
 }
 
 /* Thumbnail Area */
 .tab-thumbnail {
   flex: 1;
-  background: #000;
+  min-height: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.08) 100%);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -266,35 +352,35 @@
 }
 
 .tab-card[data-web-search="1"] .tab-thumbnail {
-  flex: 0 0 32px;
-  height: 32px;
-  width: 32px;
-  border-radius: 4px;
-  background: transparent;
-  margin: 0;
+  flex: 0 0 36px;
+  height: 36px;
+  width: 36px;
+  border-radius: var(--radius-md);
+  background: var(--bg-glass);
 }
 
 .screenshot-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: top;
-  opacity: 0.9;
-  transition: opacity 0.2s;
+  object-position: top center;
+  opacity: 0.95;
+  transition: all var(--transition-smooth);
 }
 
 .tab-card:hover .screenshot-img {
   opacity: 1;
+  transform: scale(1.02);
 }
 
-/* Favicon Tile (Fallback) */
+/* Favicon Tile */
 .favicon-tile {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--card-bg);
+  background: linear-gradient(135deg, var(--bg-glass) 0%, transparent 100%);
 }
 
 .tab-card[data-web-search="1"] .favicon-tile {
@@ -302,71 +388,76 @@
 }
 
 .favicon-large {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   object-fit: contain;
+  border-radius: var(--radius-sm);
+  transition: transform var(--transition-smooth);
+}
+
+.tab-card:hover .favicon-large {
+  transform: scale(1.08);
 }
 
 .tab-card[data-web-search="1"] .favicon-large {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
 }
 
 .favicon-letter {
   width: 48px;
   height: 48px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: white;
+  border-radius: var(--radius-md);
+  background: var(--bg-glass-hover);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 20px;
   font-weight: 600;
+  letter-spacing: -0.02em;
+  transition: all var(--transition-smooth);
+}
+
+.tab-card:hover .favicon-letter {
+  transform: scale(1.05);
+  border-color: var(--border-hover);
 }
 
 /* Tab Info */
 .tab-info {
-  padding: 10px 12px;
-  background: var(--card-bg);
-  border-top: 1px solid var(--border-subtle);
-}
-
-.tab-card:hover .tab-info {
-  background: var(--card-hover);
+  padding: 12px 14px;
+  background: transparent;
+  position: relative;
+  z-index: 1;
 }
 
 .tab-card[data-web-search="1"] .tab-info {
   flex: 1 !important;
-  border-top: none !important;
-  background: transparent !important;
   padding: 0 !important;
-  margin: 0 !important;
   display: flex !important;
   align-items: center !important;
-  box-sizing: border-box !important;
 }
 
 .tab-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 2px;
+  gap: 10px;
+  margin-bottom: 4px;
 }
 
 .tab-card[data-web-search="1"] .tab-header {
   margin: 0 !important;
   width: 100% !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-  box-sizing: border-box !important;
 }
 
 .tab-favicon {
-  width: 14px;
-  height: 14px;
-  opacity: 0.8;
+  width: 16px;
+  height: 16px;
+  opacity: 0.85;
+  border-radius: 3px;
+  flex-shrink: 0;
 }
 
 .tab-title {
@@ -377,19 +468,26 @@
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
+  letter-spacing: -0.01em;
+}
+
+.tab-card.selected .tab-title {
+  color: var(--accent-light);
 }
 
 .tab-card[data-web-search="1"] .tab-title {
   font-size: 15px;
+  font-weight: 500;
 }
 
 .tab-url {
   font-size: 11px;
-  color: var(--text-secondary);
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-left: 22px; /* Align with title text */
+  padding-left: 26px;
+  letter-spacing: -0.01em;
 }
 
 .tab-card[data-web-search="1"] .tab-url {
@@ -399,62 +497,265 @@
 /* Close Button */
 .tab-close-btn {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.6);
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: white;
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 16px;
+  font-weight: 300;
   opacity: 0;
-  transition: all 0.1s;
+  transform: scale(0.8);
+  transition: all var(--transition-fast);
   cursor: pointer;
+  z-index: 10;
 }
 
 .tab-card:hover .tab-close-btn {
   opacity: 1;
+  transform: scale(1);
 }
 
 .tab-close-btn:hover {
-  background: #ef4444;
+  background: var(--danger);
+  transform: scale(1.1);
+}
+
+.tab-close-btn:active {
+  transform: scale(0.95);
 }
 
 /* Footer/Help */
 .tab-switcher-help {
   display: flex;
-  gap: 16px;
-  margin-top: 16px;
-  padding-top: 16px;
+  gap: 20px;
+  margin-top: 20px;
+  padding-top: 18px;
   border-top: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
+  color: var(--text-muted);
   font-size: 12px;
   justify-content: center;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
+.tab-switcher-help span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 kbd {
-  background: var(--card-bg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  background: var(--bg-glass);
   border: 1px solid var(--border-subtle);
-  border-radius: 4px;
-  padding: 2px 6px;
-  font-family: monospace;
-  margin-right: 4px;
+  border-radius: var(--radius-sm);
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: all var(--transition-fast);
+}
+
+kbd:hover {
+  background: var(--bg-glass-hover);
+  border-color: var(--border-hover);
   color: var(--text-primary);
-  box-shadow: 0 1px 0 var(--border-subtle);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* Animations */
+@keyframes backdropFadeIn {
+  from { 
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+  to { 
+    opacity: 1;
+    backdrop-filter: blur(24px) saturate(180%);
+  }
 }
 
-@keyframes scaleIn {
-  from { opacity: 0; transform: scale(0.98); }
-  to { opacity: 1; transform: scale(1); }
+@keyframes containerSlideIn {
+  from { 
+    opacity: 0;
+    transform: translateY(-20px) scale(0.96);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Recent mode styles - Column Layout */
+.tab-switcher-grid.recent-mode .tab-card {
+  width: 100%;
+  height: auto;
+  min-height: 56px;
+  flex-direction: row;
+  align-items: center;
+  padding: 12px 16px;
+  gap: 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.tab-switcher-grid.recent-mode .tab-card:hover {
+  transform: none;
+  border-color: var(--border-hover);
+}
+
+.tab-switcher-grid.recent-mode .tab-card.selected {
+  border-color: var(--accent);
+  background: var(--card-selected);
+}
+
+.tab-switcher-grid.recent-mode .tab-thumbnail {
+  flex: 0 0 36px;
+  height: 36px;
+  width: 36px;
+  min-height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-glass);
+}
+
+.tab-switcher-grid.recent-mode .favicon-tile {
+  border-radius: var(--radius-sm);
+}
+
+.tab-switcher-grid.recent-mode .favicon-large {
+  width: 24px;
+  height: 24px;
+}
+
+.tab-switcher-grid.recent-mode .favicon-letter {
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+  border-radius: var(--radius-sm);
+}
+
+.tab-switcher-grid.recent-mode .tab-info {
+  flex: 1;
+  padding: 0;
+  min-width: 0;
+}
+
+.tab-switcher-grid.recent-mode .tab-header {
+  margin-bottom: 2px;
+}
+
+.tab-switcher-grid.recent-mode .tab-title {
+  font-size: 14px;
+}
+
+.tab-switcher-grid.recent-mode .tab-url {
+  padding-left: 0;
+  font-size: 12px;
+}
+
+.tab-switcher-grid.recent-mode .tab-close-btn {
+  display: none;
+}
+
+/* Search mode styles - Column Layout (same as recent) */
+.tab-switcher-grid.search-mode .tab-card {
+  width: 100%;
+  height: auto;
+  min-height: 56px;
+  flex-direction: row;
+  align-items: center;
+  padding: 12px 16px;
+  gap: 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.tab-switcher-grid.search-mode .tab-card:hover {
+  transform: none;
+  border-color: var(--border-hover);
+}
+
+.tab-switcher-grid.search-mode .tab-card.selected {
+  border-color: var(--accent);
+  background: var(--card-selected);
+}
+
+.tab-switcher-grid.search-mode .tab-thumbnail {
+  flex: 0 0 36px;
+  height: 36px;
+  width: 36px;
+  min-height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-glass);
+}
+
+.tab-switcher-grid.search-mode .tab-info {
+  flex: 1;
+  padding: 0;
+  min-width: 0;
+}
+
+.tab-switcher-grid.search-mode .tab-title {
+  font-size: 14px;
+}
+
+.tab-switcher-grid.search-mode .tab-url {
+  padding-left: 0;
+  font-size: 12px;
+  display: block;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .tab-switcher-container {
+    padding: 16px;
+    max-width: 98vw;
+    max-height: 90vh;
+  }
+  
+  .tab-switcher-grid {
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 10px;
+  }
+  
+  .tab-card {
+    height: 150px;
+  }
+  
+  .tab-switcher-help {
+    gap: 12px;
+    font-size: 11px;
+  }
+  
+  .recently-closed-btn {
+    padding: 0 12px;
+    font-size: 12px;
+  }
 }
 `;
 
@@ -793,16 +1094,26 @@ kbd {
     let items = [];
     try {
       items = await new Promise((resolve) => {
-        chrome.runtime.sendMessage(
-          { action: "getRecentlyClosed", maxResults: 10 },
-          (res) => {
-            if (res && res.success) resolve(res.items || []);
-            else resolve([]);
-          }
-        );
+        try {
+          chrome.runtime.sendMessage(
+            { action: "getRecentlyClosed", maxResults: 10 },
+            (res) => {
+              // Check for runtime errors
+              if (chrome.runtime.lastError) {
+                console.debug("[TAB SWITCHER] Runtime error:", chrome.runtime.lastError.message);
+                resolve([]);
+                return;
+              }
+              if (res && res.success) resolve(res.items || []);
+              else resolve([]);
+            }
+          );
+        } catch (err) {
+          resolve([]);
+        }
       });
     } catch (e) {
-      console.error("[TAB SWITCHER] Failed to load recently closed:", e);
+      console.debug("[TAB SWITCHER] Failed to load recently closed:", e);
     }
     // Map to renderable items (no screenshots)
     state.recentItems = items.map((it, idx) => ({
@@ -817,9 +1128,11 @@ kbd {
     state.currentTabs = state.recentItems;
     state.filteredTabs = state.recentItems;
     state.selectedIndex = 0;
+    // Add recent-mode class for column layout
+    if (state.domCache.grid) state.domCache.grid.classList.add("recent-mode");
     renderTabsStandard(state.filteredTabs);
     // Refocus search
-    state.domCache.searchBox.focus();
+    if (state.domCache.searchBox) state.domCache.searchBox.focus();
   }
 
   function switchToActive() {
@@ -828,13 +1141,20 @@ kbd {
     state.currentTabs = state.activeTabs || [];
     state.filteredTabs = state.currentTabs;
     state.selectedIndex = 0;
+    // Remove recent-mode and search-mode classes for grid layout
+    if (state.domCache.grid) {
+      state.domCache.grid.classList.remove("recent-mode");
+      state.domCache.grid.classList.remove("search-mode");
+    }
     if (state.filteredTabs.length > 50) {
       renderTabsVirtual(state.filteredTabs);
     } else {
       renderTabsStandard(state.filteredTabs);
     }
-    state.domCache.searchBox.value = "";
-    state.domCache.searchBox.focus();
+    if (state.domCache.searchBox) {
+      state.domCache.searchBox.value = "";
+      state.domCache.searchBox.focus();
+    }
   }
 
   // ============================================================================
@@ -1387,8 +1707,18 @@ kbd {
         };
         state.filteredTabs = [webSearchTab];
         state.selectedIndex = 0;
+        // Add search-mode class for column layout
+        if (state.domCache.grid) {
+          state.domCache.grid.classList.add("search-mode");
+          state.domCache.grid.classList.remove("recent-mode");
+        }
         renderTabsStandard(state.filteredTabs);
         return;
+      }
+      
+      // Remove search-mode class when not in web search
+      if (state.domCache.grid) {
+        state.domCache.grid.classList.remove("search-mode");
       }
 
       // '.' quick toggle
@@ -2168,13 +2498,22 @@ kbd {
       setViewMode("recent");
       // Fetch recently closed items
       const items = await new Promise((resolve) => {
-        chrome.runtime.sendMessage(
-          { action: "getRecentlyClosed", maxResults: 10 },
-          (res) => {
-            if (!res || !res.success) return resolve([]);
-            resolve(res.items || []);
-          }
-        );
+        try {
+          chrome.runtime.sendMessage(
+            { action: "getRecentlyClosed", maxResults: 10 },
+            (res) => {
+              if (chrome.runtime.lastError) {
+                console.debug("[TAB SWITCHER] Runtime error:", chrome.runtime.lastError.message);
+                resolve([]);
+                return;
+              }
+              if (!res || !res.success) return resolve([]);
+              resolve(res.items || []);
+            }
+          );
+        } catch (err) {
+          resolve([]);
+        }
       });
       state.recentItems = items;
       state.currentTabs = items; // reuse pipeline
@@ -2183,9 +2522,9 @@ kbd {
       if (state.domCache.grid) state.domCache.grid.classList.add("recent-mode");
       renderTabsStandard(items);
       // focus search
-      state.domCache.searchBox.focus();
+      if (state.domCache.searchBox) state.domCache.searchBox.focus();
     } catch (e) {
-      console.error("[TAB SWITCHER] Failed to load recently closed:", e);
+      console.debug("[TAB SWITCHER] Failed to load recently closed:", e);
     }
   }
 
@@ -2194,8 +2533,10 @@ kbd {
     state.currentTabs = state.activeTabs || [];
     state.filteredTabs = state.currentTabs;
     state.selectedIndex = 0;
-    if (state.domCache.grid)
+    if (state.domCache.grid) {
       state.domCache.grid.classList.remove("recent-mode");
+      state.domCache.grid.classList.remove("search-mode");
+    }
     if (state.currentTabs.length > 50) {
       renderTabsVirtual(state.currentTabs);
     } else {

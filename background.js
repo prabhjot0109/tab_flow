@@ -286,7 +286,7 @@ const screenshotCache = new LRUCache(
   PERF_CONFIG.MAX_CACHED_TABS,
   PERF_CONFIG.MAX_CACHE_BYTES
 );
-const recentTabOrder = []; // Track tab access order (most recent first)
+let recentTabOrder = []; // Track tab access order (most recent first) - will be restored from storage
 const tabOpenOrder = new Map(); // Track when tabs were opened (tabId -> timestamp)
 const captureQueue = []; // Queue for rate-limited captures
 let lastCaptureTime = 0; // Timestamp of last capture
@@ -294,6 +294,7 @@ let isProcessingQueue = false; // Queue processing flag
 let previousActiveTabId = null; // Track previous active tab for better screenshot capture
 let currentQualityTier = PERF_CONFIG.DEFAULT_QUALITY_TIER; // Current quality setting
 let pendingCaptures = new Set(); // Track tabs with pending captures to avoid duplicates
+let recentOrderRestored = false; // Flag to track if recent order has been restored
 
 // ============================================================================
 // PERFORMANCE MONITORING
@@ -499,62 +500,130 @@ async function captureTabScreenshot(tabId, forceQuality = null) {
   }
 }
 
-// Check if tab can be captured
+// Check if tab can be captured and injected
 function isTabCapturable(tab) {
   if (tab.discarded) return false;
   if (!tab.url) return false;
 
+  // Protected schemes that cannot be scripted
   const protectedSchemes = [
     "chrome://",
     "chrome-extension://",
     "edge://",
     "about:",
     "file://",
+    "devtools://",
+    "view-source:",
+    "data:",
+    "blob:",
   ];
-  return !protectedSchemes.some((scheme) => tab.url.startsWith(scheme));
+
+  // Protected domains that may have issues with injection or strict CSP
+  const protectedDomains = [
+    // Google services
+    "chrome.google.com",
+    "chromewebstore.google.com",
+    "accounts.google.com",
+    "myaccount.google.com",
+    "pay.google.com",
+    "payments.google.com",
+    // Microsoft
+    "microsoftedge.microsoft.com",
+    "login.microsoftonline.com",
+    "login.live.com",
+    // Mozilla
+    "addons.mozilla.org",
+    // Banking/Security patterns
+    "banking.",
+    "bank.",
+    "secure.",
+    "login.",
+    "signin.",
+    "auth.",
+    "oauth.",
+    "sso.",
+  ];
+
+  // Check protected schemes
+  if (protectedSchemes.some((scheme) => tab.url.startsWith(scheme))) {
+    return false;
+  }
+
+  // Check protected domains
+  try {
+    const url = new URL(tab.url);
+    const hostname = url.hostname.toLowerCase();
+    if (protectedDomains.some((domain) => hostname.includes(domain))) {
+      return false;
+    }
+  } catch (e) {
+    return false;
+  }
+
+  return true;
 }
 
 // ============================================================================
 // TAB EVENT LISTENERS
 // ============================================================================
 
-// Listen for tab activation - auto-capture screenshots
-chrome.tabs.onActivated.addListener(async (activeInfo) => {
-  // Update tracking immediately
-  previousActiveTabId = activeInfo.tabId;
-  updateRecentTabOrder(activeInfo.tabId);
+// Defensive check for chrome.tabs API availability
+if (typeof chrome !== "undefined" && chrome.tabs) {
+  // Listen for tab activation - auto-capture screenshots
+  chrome.tabs.onActivated.addListener(async (activeInfo) => {
+    try {
+      // Update tracking immediately
+      previousActiveTabId = activeInfo.tabId;
+      updateRecentTabOrder(activeInfo.tabId);
 
-  // Capture the newly activated tab after a short delay to let it render
-  // This is more reliable than trying to capture the previous tab
-  setTimeout(() => {
-    queueCapture(activeInfo.tabId, true);
-  }, 200);
-});
+      // Capture the newly activated tab after a short delay to let it render
+      setTimeout(() => {
+        queueCapture(activeInfo.tabId, true);
+      }, 200);
+    } catch (e) {
+      console.debug("[TAB] Error in onActivated:", e);
+    }
+  });
 
-// Listen for tab updates (page load complete) - capture screenshot
-chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  // Capture when page finishes loading and tab is active
-  if (changeInfo.status === "complete" && tab.active) {
-    // Delay capture to ensure page is fully rendered
-    setTimeout(() => {
-      queueCapture(tabId, true);
-    }, 300);
-  }
-});
+  // Listen for tab updates (page load complete) - capture screenshot
+  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    try {
+      // Capture when page finishes loading and tab is active
+      if (changeInfo.status === "complete" && tab.active) {
+        // Delay capture to ensure page is fully rendered
+        setTimeout(() => {
+          queueCapture(tabId, true);
+        }, 300);
+      }
+    } catch (e) {
+      console.debug("[TAB] Error in onUpdated:", e);
+    }
+  });
 
-// Track when tabs are created for open order
-chrome.tabs.onCreated.addListener((tab) => {
-  tabOpenOrder.set(tab.id, Date.now());
-});
+  // Track when tabs are created for open order
+  chrome.tabs.onCreated.addListener((tab) => {
+    try {
+      tabOpenOrder.set(tab.id, Date.now());
+    } catch (e) {
+      console.debug("[TAB] Error in onCreated:", e);
+    }
+  });
 
-// Clean up when tabs are closed
-chrome.tabs.onRemoved.addListener((tabId) => {
-  screenshotCache.delete(tabId);
-  removeFromRecentOrder(tabId);
-  tabOpenOrder.delete(tabId);
-  pendingCaptures.delete(tabId);
-  console.debug(`[CLEANUP] Removed tab ${tabId} from cache`);
-});
+  // Clean up when tabs are closed
+  chrome.tabs.onRemoved.addListener((tabId) => {
+    try {
+      screenshotCache.delete(tabId);
+      removeFromRecentOrder(tabId);
+      tabOpenOrder.delete(tabId);
+      pendingCaptures.delete(tabId);
+      console.debug(`[CLEANUP] Removed tab ${tabId} from cache`);
+    } catch (e) {
+      console.debug("[TAB] Error in onRemoved:", e);
+    }
+  });
+} else {
+  console.error("[INIT] chrome.tabs API not available");
+}
 
 // Update tab order tracking
 function updateRecentTabOrder(tabId) {
@@ -565,6 +634,9 @@ function updateRecentTabOrder(tabId) {
   if (recentTabOrder.length > PERF_CONFIG.MAX_CACHED_TABS * 2) {
     recentTabOrder.length = PERF_CONFIG.MAX_CACHED_TABS * 2;
   }
+  
+  // Persist to storage (debounced)
+  saveRecentOrderDebounced();
 }
 
 function removeFromRecentOrder(tabId) {
@@ -574,21 +646,51 @@ function removeFromRecentOrder(tabId) {
   }
 }
 
+// Debounced save to avoid too many writes
+let saveRecentOrderTimer = null;
+function saveRecentOrderDebounced() {
+  if (saveRecentOrderTimer) clearTimeout(saveRecentOrderTimer);
+  saveRecentOrderTimer = setTimeout(() => {
+    chrome.storage.local.set({ recentTabOrder: recentTabOrder.slice(0, 100) })
+      .catch(e => console.debug("[STORAGE] Failed to save recent order:", e));
+  }, 500);
+}
+
+// Restore recent order from storage
+async function restoreRecentOrder() {
+  try {
+    const result = await chrome.storage.local.get(["recentTabOrder"]);
+    if (result.recentTabOrder && Array.isArray(result.recentTabOrder)) {
+      // Filter out tabs that no longer exist
+      const existingTabs = await chrome.tabs.query({});
+      const existingIds = new Set(existingTabs.map(t => t.id));
+      recentTabOrder = result.recentTabOrder.filter(id => existingIds.has(id));
+      console.log(`[INIT] Restored ${recentTabOrder.length} recent tab order entries`);
+    }
+  } catch (e) {
+    console.debug("[STORAGE] Failed to restore recent order:", e);
+  }
+  recentOrderRestored = true;
+}
+
 // ============================================================================
 // COMMAND HANDLER - SHOW TAB SWITCHER
 // ============================================================================
 
 // Listen for keyboard shortcut
-chrome.commands.onCommand.addListener((command) => {
-  if (command === "show-tab-switcher" || command === "cycle-next-tab") {
-    handleShowTabSwitcher();
-  }
-});
+if (typeof chrome !== "undefined" && chrome.commands) {
+  chrome.commands.onCommand.addListener((command) => {
+    if (command === "show-tab-switcher" || command === "cycle-next-tab") {
+      handleShowTabSwitcher();
+    }
+  });
+}
 
 // Handle showing the tab switcher - OPTIMIZED FOR <100ms
 async function handleShowTabSwitcher() {
-  // Ensure cache is restored before querying
+  // Ensure cache and recent order are restored before querying
   if (screenshotCache.ready) await screenshotCache.ready;
+  if (!recentOrderRestored) await restoreRecentOrder();
 
   const startTime = performance.now();
 
@@ -598,11 +700,11 @@ async function handleShowTabSwitcher() {
     const tabs = await chrome.tabs.query({ windowId: currentWindow.id });
 
     // Initialize open order for tabs we haven't seen yet
-    tabs.forEach(tab => {
+    const now = Date.now();
+    tabs.forEach((tab, index) => {
       if (!tabOpenOrder.has(tab.id)) {
         // Use a timestamp based on tab index for existing tabs
-        // This preserves relative order for tabs opened before extension loaded
-        tabOpenOrder.set(tab.id, Date.now() - (tabs.length - tab.index) * 1000);
+        tabOpenOrder.set(tab.id, now - (tabs.length - index) * 1000);
       }
     });
 
@@ -749,11 +851,13 @@ function sortTabsByRecent(tabs) {
 // ============================================================================
 
 // Listen for messages from content script
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  // Handle async operations properly
-  handleMessage(request, sender, sendResponse);
-  return true; // Keep channel open for async response
-});
+if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.onMessage) {
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    // Handle async operations properly
+    handleMessage(request, sender, sendResponse);
+    return true; // Keep channel open for async response
+  });
+}
 
 async function handleMessage(request, sender, sendResponse) {
   try {
@@ -952,6 +1056,9 @@ if (PERF_CONFIG.PERFORMANCE_LOGGING) {
 // Initialize existing tabs on startup
 async function initializeExistingTabs() {
   try {
+    // First restore recent order from storage
+    await restoreRecentOrder();
+    
     const tabs = await chrome.tabs.query({});
     const now = Date.now();
     
@@ -968,7 +1075,10 @@ async function initializeExistingTabs() {
     for (const win of windows) {
       const [activeTab] = await chrome.tabs.query({ windowId: win.id, active: true });
       if (activeTab) {
-        updateRecentTabOrder(activeTab.id);
+        // Only update if not already in recent order (to preserve restored order)
+        if (recentTabOrder.indexOf(activeTab.id) === -1) {
+          updateRecentTabOrder(activeTab.id);
+        }
         previousActiveTabId = activeTab.id;
         // Capture active tab screenshot after a delay
         setTimeout(() => {
@@ -977,7 +1087,7 @@ async function initializeExistingTabs() {
       }
     }
 
-    console.log(`[INIT] Initialized ${tabs.length} existing tabs`);
+    console.log(`[INIT] Initialized ${tabs.length} existing tabs, ${recentTabOrder.length} in recent order`);
   } catch (error) {
     console.error("[INIT] Failed to initialize existing tabs:", error);
   }
