@@ -689,9 +689,18 @@ kbd {
     state.filteredTabs = tabs;
     setViewMode("active");
 
-    // Find active tab index
-    state.selectedIndex = tabs.findIndex((tab) => tab.id === activeTabId);
-    if (state.selectedIndex === -1) state.selectedIndex = 0;
+    // Start selection at the second tab (most recently used that isn't current)
+    // This mimics Alt+Tab behavior where pressing the shortcut once shows the previous tab
+    const activeIndex = tabs.findIndex((tab) => tab.id === activeTabId);
+    if (tabs.length > 1 && activeIndex === 0) {
+      // Current tab is first (most recent), select the second one
+      state.selectedIndex = 1;
+    } else if (activeIndex > 0) {
+      // Current tab is not first, select the first one (most recent)
+      state.selectedIndex = 0;
+    } else {
+      state.selectedIndex = 0;
+    }
 
     // Determine rendering strategy based on tab count
     if (tabs.length > 50) {

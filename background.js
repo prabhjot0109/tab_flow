@@ -286,12 +286,14 @@ const screenshotCache = new LRUCache(
   PERF_CONFIG.MAX_CACHED_TABS,
   PERF_CONFIG.MAX_CACHE_BYTES
 );
-const recentTabOrder = []; // Track tab access order
+const recentTabOrder = []; // Track tab access order (most recent first)
+const tabOpenOrder = new Map(); // Track when tabs were opened (tabId -> timestamp)
 const captureQueue = []; // Queue for rate-limited captures
 let lastCaptureTime = 0; // Timestamp of last capture
 let isProcessingQueue = false; // Queue processing flag
 let previousActiveTabId = null; // Track previous active tab for better screenshot capture
 let currentQualityTier = PERF_CONFIG.DEFAULT_QUALITY_TIER; // Current quality setting
+let pendingCaptures = new Set(); // Track tabs with pending captures to avoid duplicates
 
 // ============================================================================
 // PERFORMANCE MONITORING
@@ -350,8 +352,8 @@ const perfMetrics = {
 
 // Add capture to queue
 function queueCapture(tabId, priority = false) {
-  // Check if already in queue
-  if (captureQueue.some((item) => item.tabId === tabId)) {
+  // Check if already in queue or pending
+  if (captureQueue.some((item) => item.tabId === tabId) || pendingCaptures.has(tabId)) {
     return;
   }
 
@@ -383,7 +385,14 @@ async function processQueue() {
     }
 
     const item = captureQueue.shift();
-    await captureTabScreenshot(item.tabId);
+    pendingCaptures.add(item.tabId);
+    
+    try {
+      await captureTabScreenshot(item.tabId);
+    } finally {
+      pendingCaptures.delete(item.tabId);
+    }
+    
     lastCaptureTime = Date.now();
   }
 
@@ -391,22 +400,15 @@ async function processQueue() {
 }
 
 // Capture screenshot with error handling and compression
-// "requireActive" allows callers (like the onActivated handler) to skip
-// captures for background tabs, while the tab switcher can still request
-// a best-effort thumbnail for already-open tabs.
-async function captureTabScreenshot(
-  tabId,
-  forceQuality = null,
-  requireActive = true
-) {
+// This function captures the currently visible tab in the specified window.
+// It should only be called when the target tab is active and visible.
+async function captureTabScreenshot(tabId, forceQuality = null) {
   try {
     const tab = await chrome.tabs.get(tabId);
 
-    // Normally we only want to capture active tabs, because
-    // captureVisibleTab always captures the visible tab for the window.
-    // For best-effort previews of already-open tabs we allow callers
-    // to opt out of this strict check.
-    if (requireActive && !tab.active) {
+    // Only capture if tab is currently active (visible)
+    // captureVisibleTab captures whatever is visible, so we must verify
+    if (!tab.active) {
       console.debug(`[CAPTURE] Tab ${tabId} is not active, skipping capture`);
       return null;
     }
@@ -417,10 +419,18 @@ async function captureTabScreenshot(
       return null;
     }
 
-    // Small delay for rendering
+    // Wait for page to be fully rendered
+    // Longer delay helps ensure content is painted
     await new Promise((resolve) =>
-      setTimeout(resolve, PERF_CONFIG.CAPTURE_DELAY)
+      setTimeout(resolve, PERF_CONFIG.CAPTURE_DELAY + 50)
     );
+
+    // Verify tab is still active after delay (user might have switched)
+    const tabAfterDelay = await chrome.tabs.get(tabId).catch(() => null);
+    if (!tabAfterDelay || !tabAfterDelay.active) {
+      console.debug(`[CAPTURE] Tab ${tabId} no longer active after delay`);
+      return null;
+    }
 
     // Get quality settings from current tier or forced override
     const qualityTier = forceQuality || currentQualityTier;
@@ -428,46 +438,49 @@ async function captureTabScreenshot(
       PERF_CONFIG.QUALITY_TIERS[qualityTier] ||
       PERF_CONFIG.QUALITY_TIERS.NORMAL;
 
-    // Capture screenshot (this captures the currently visible/active tab)
     const startTime = performance.now();
 
-    // Try WebP format first (better compression), fallback to JPEG
+    // Capture as JPEG directly for better compression and smaller size
     let screenshot = null;
-    let format = "jpeg";
-
     try {
-      // WebP support check and capture
-      screenshot = await chrome.tabs.captureVisibleTab(tab.windowId, {
-        format: "png", // Capture as PNG first for WebP conversion
-      });
-
-      // Convert to WebP if possible (browser support)
-      if (screenshot && typeof screenshot === "string") {
-        format = "png"; // Keep as PNG for now (WebP conversion needs canvas in content script)
-      }
-    } catch (webpError) {
-      // Fallback to JPEG with quality tier
       screenshot = await chrome.tabs.captureVisibleTab(tab.windowId, {
         format: "jpeg",
         quality: qualitySettings.quality,
       });
-      format = "jpeg";
+    } catch (captureError) {
+      // Retry once with lower quality if first attempt fails
+      console.debug(`[CAPTURE] First attempt failed, retrying with lower quality`);
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        screenshot = await chrome.tabs.captureVisibleTab(tab.windowId, {
+          format: "jpeg",
+          quality: Math.max(30, qualitySettings.quality - 20),
+        });
+      } catch (retryError) {
+        console.debug(`[CAPTURE] Retry also failed for tab ${tabId}:`, retryError.message);
+        return null;
+      }
+    }
+
+    if (!screenshot) {
+      console.debug(`[CAPTURE] No screenshot data for tab ${tabId}`);
+      return null;
     }
 
     const captureTime = performance.now() - startTime;
 
-    // Check size and compress if needed
+    // Check size
     const size = screenshotCache._estimateSize(screenshot);
-    if (size > qualitySettings.maxSize) {
+    if (size > qualitySettings.maxSize * 1.5) {
+      // Allow some overflow but warn
       console.warn(
-        `[CAPTURE] Screenshot too large: ${(size / 1024).toFixed(1)}KB (max: ${(
+        `[CAPTURE] Screenshot large: ${(size / 1024).toFixed(1)}KB (target: ${(
           qualitySettings.maxSize / 1024
-        ).toFixed(1)}KB), skipping`
+        ).toFixed(1)}KB)`
       );
-      return null;
     }
 
-    // Store in LRU cache with metadata
+    // Store in LRU cache
     screenshotCache.set(tabId, screenshot);
     perfMetrics.captureCount++;
 
@@ -475,7 +488,7 @@ async function captureTabScreenshot(
       console.debug(
         `[CAPTURE] Tab ${tabId}: ${captureTime.toFixed(2)}ms, ${(
           size / 1024
-        ).toFixed(1)}KB (${format}, ${qualitySettings.label})`
+        ).toFixed(1)}KB (${qualitySettings.label})`
       );
     }
 
@@ -507,39 +520,39 @@ function isTabCapturable(tab) {
 
 // Listen for tab activation - auto-capture screenshots
 chrome.tabs.onActivated.addListener(async (activeInfo) => {
-  // IMPROVED STRATEGY: Capture the PREVIOUS tab before it loses focus
-  // This ensures we get screenshots before switching away
-  if (
-    previousActiveTabId !== null &&
-    previousActiveTabId !== activeInfo.tabId
-  ) {
-    try {
-      const previousTab = await chrome.tabs.get(previousActiveTabId);
-      // Only capture if the previous tab still exists and was in the same window
-      if (previousTab && previousTab.windowId === activeInfo.windowId) {
-        // Immediate capture of previous tab (it's still visible for a brief moment)
-        queueCapture(previousActiveTabId, true);
-      }
-    } catch (error) {
-      // Previous tab may have been closed, ignore
-      console.debug(
-        `[CAPTURE] Previous tab ${previousActiveTabId} no longer exists`
-      );
-    }
-  }
-
-  // Update tracking
+  // Update tracking immediately
   previousActiveTabId = activeInfo.tabId;
   updateRecentTabOrder(activeInfo.tabId);
 
-  // Queue capture for newly activated tab (lower priority since we focus on previous tab)
-  queueCapture(activeInfo.tabId, false);
+  // Capture the newly activated tab after a short delay to let it render
+  // This is more reliable than trying to capture the previous tab
+  setTimeout(() => {
+    queueCapture(activeInfo.tabId, true);
+  }, 200);
+});
+
+// Listen for tab updates (page load complete) - capture screenshot
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  // Capture when page finishes loading and tab is active
+  if (changeInfo.status === "complete" && tab.active) {
+    // Delay capture to ensure page is fully rendered
+    setTimeout(() => {
+      queueCapture(tabId, true);
+    }, 300);
+  }
+});
+
+// Track when tabs are created for open order
+chrome.tabs.onCreated.addListener((tab) => {
+  tabOpenOrder.set(tab.id, Date.now());
 });
 
 // Clean up when tabs are closed
 chrome.tabs.onRemoved.addListener((tabId) => {
   screenshotCache.delete(tabId);
   removeFromRecentOrder(tabId);
+  tabOpenOrder.delete(tabId);
+  pendingCaptures.delete(tabId);
   console.debug(`[CLEANUP] Removed tab ${tabId} from cache`);
 });
 
@@ -580,27 +593,30 @@ async function handleShowTabSwitcher() {
   const startTime = performance.now();
 
   try {
-    // Get current window tabs (cached query when possible)
+    // Get current window tabs
     const currentWindow = await chrome.windows.getCurrent();
     const tabs = await chrome.tabs.query({ windowId: currentWindow.id });
 
-    // Sort by recent order
+    // Initialize open order for tabs we haven't seen yet
+    tabs.forEach(tab => {
+      if (!tabOpenOrder.has(tab.id)) {
+        // Use a timestamp based on tab index for existing tabs
+        // This preserves relative order for tabs opened before extension loaded
+        tabOpenOrder.set(tab.id, Date.now() - (tabs.length - tab.index) * 1000);
+      }
+    });
+
+    // Sort by recent access order
     const sortedTabs = sortTabsByRecent(tabs);
 
     // INSTANT RESPONSE: Build tab data with cached screenshots only
-    // No waiting for captures - overlay opens immediately
-
-    // Smart Preview Strategy:
-    // Only show screenshots for the top 6 most recent tabs (including current).
-    // All other tabs get favicons to keep the UI clean and performant.
-    const RECENT_PREVIEW_LIMIT = 6;
+    // Show screenshots for top 8 most recent tabs for better preview coverage
+    const RECENT_PREVIEW_LIMIT = 8;
 
     const tabsData = sortedTabs.map((tab, index) => {
-      // Only use screenshot if tab is capturable and has valid cache
       let screenshot = null;
 
-      // Check if this tab is in the top recent list
-      // Since sortedTabs is already sorted by recency, we can just use the index
+      // Check if this tab should show a screenshot preview
       const isRecent = index < RECENT_PREVIEW_LIMIT;
 
       if (isTabCapturable(tab) && isRecent) {
@@ -610,8 +626,6 @@ async function handleShowTabSwitcher() {
           perfMetrics.cacheHits++;
         } else {
           perfMetrics.cacheMisses++;
-          // Don't queue captures for inactive tabs - they would capture the wrong content
-          // Screenshots will be captured automatically when user activates those tabs
         }
       }
 
@@ -633,7 +647,7 @@ async function handleShowTabSwitcher() {
       currentWindow: true,
     });
 
-    // Guard: Do not attempt to inject on protected pages (chrome://, edge://, etc.)
+    // Guard: Do not attempt to inject on protected pages
     if (!isTabCapturable(activeTab)) {
       console.warn(
         "[INJECT] Cannot open overlay on protected page. Switch to a regular webpage and try again."
@@ -701,21 +715,32 @@ async function sendMessageWithRetry(tabId, message, retries = 1) {
   }
 }
 
-// Sort tabs by recent usage
+// Sort tabs by recent usage (most recently accessed first)
+// Falls back to tab open order for tabs not yet accessed
 function sortTabsByRecent(tabs) {
-  return tabs.sort((a, b) => {
-    const aIndex = recentTabOrder.indexOf(a.id);
-    const bIndex = recentTabOrder.indexOf(b.id);
+  return [...tabs].sort((a, b) => {
+    const aRecentIndex = recentTabOrder.indexOf(a.id);
+    const bRecentIndex = recentTabOrder.indexOf(b.id);
 
-    // If neither in recent order, sort by tab index
-    if (aIndex === -1 && bIndex === -1) return a.index - b.index;
+    // Both in recent order - sort by recency (lower index = more recent)
+    if (aRecentIndex !== -1 && bRecentIndex !== -1) {
+      return aRecentIndex - bRecentIndex;
+    }
 
-    // If only one in recent order, prioritize it
-    if (aIndex === -1) return 1;
-    if (bIndex === -1) return -1;
+    // Only one in recent order - prioritize the one that was accessed
+    if (aRecentIndex !== -1) return -1;
+    if (bRecentIndex !== -1) return 1;
 
-    // Both in recent order, sort by recent order
-    return aIndex - bIndex;
+    // Neither accessed yet - sort by open order (newer tabs first)
+    const aOpenTime = tabOpenOrder.get(a.id) || 0;
+    const bOpenTime = tabOpenOrder.get(b.id) || 0;
+    
+    if (aOpenTime !== bOpenTime) {
+      return bOpenTime - aOpenTime; // Newer tabs first
+    }
+
+    // Final fallback: sort by tab index (position in tab bar)
+    return a.index - b.index;
   });
 }
 
@@ -859,13 +884,8 @@ async function handleMessage(request, sender, sendResponse) {
           return;
         }
         try {
-          // Manual capture request from UI: we do a best-effort capture
-          // for already-open tabs, so do not require the tab to be active
-          const screenshot = await captureTabScreenshot(
-            request.tabId,
-            null,
-            false
-          );
+          // Manual capture request - only works for active tabs
+          const screenshot = await captureTabScreenshot(request.tabId, null);
           sendResponse({
             success: !!screenshot,
             screenshot: screenshot,
@@ -929,6 +949,40 @@ if (PERF_CONFIG.PERFORMANCE_LOGGING) {
 // INITIALIZATION
 // ============================================================================
 
+// Initialize existing tabs on startup
+async function initializeExistingTabs() {
+  try {
+    const tabs = await chrome.tabs.query({});
+    const now = Date.now();
+    
+    // Initialize open order for all existing tabs
+    tabs.forEach((tab, index) => {
+      if (!tabOpenOrder.has(tab.id)) {
+        // Assign timestamps based on tab index to preserve relative order
+        tabOpenOrder.set(tab.id, now - (tabs.length - index) * 1000);
+      }
+    });
+
+    // Find and capture the active tab in each window
+    const windows = await chrome.windows.getAll();
+    for (const win of windows) {
+      const [activeTab] = await chrome.tabs.query({ windowId: win.id, active: true });
+      if (activeTab) {
+        updateRecentTabOrder(activeTab.id);
+        previousActiveTabId = activeTab.id;
+        // Capture active tab screenshot after a delay
+        setTimeout(() => {
+          queueCapture(activeTab.id, true);
+        }, 500);
+      }
+    }
+
+    console.log(`[INIT] Initialized ${tabs.length} existing tabs`);
+  } catch (error) {
+    console.error("[INIT] Failed to initialize existing tabs:", error);
+  }
+}
+
 // Cache is now persistent, so we don't clear it on load.
 // Stale entries will be evicted by LRU policy naturally.
 console.log("[INIT] Visual Tab Switcher initialized");
@@ -951,6 +1005,9 @@ chrome.storage.local.get(["qualityTier"], (result) => {
     );
   }
 });
+
+// Initialize existing tabs after a short delay to let the service worker settle
+setTimeout(initializeExistingTabs, 100);
 
 console.log("═══════════════════════════════════════════════════════");
 console.log("Visual Tab Switcher - Performance Optimized");
