@@ -6,7 +6,6 @@
 // ============================================================================
 
 (() => {
-
   const SHADOW_HOST_ID = "tab-switcher-host";
   const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
 /* ============================================================================
@@ -888,7 +887,6 @@ kbd:hover {
 
   // WeakMap for tab metadata (automatic garbage collection)
 
-
   // ============================================================================
   // MESSAGE LISTENER
   // ============================================================================
@@ -1216,7 +1214,10 @@ kbd:hover {
             (res) => {
               // Check for runtime errors
               if (chrome.runtime.lastError) {
-                console.debug("[TAB SWITCHER] Runtime error:", chrome.runtime.lastError.message);
+                console.debug(
+                  "[TAB SWITCHER] Runtime error:",
+                  chrome.runtime.lastError.message
+                );
                 resolve([]);
                 return;
               }
@@ -1367,7 +1368,8 @@ kbd:hover {
 
     const duration = performance.now() - startTime;
     console.log(
-      `[PERF] Virtual rendered ${endIndex - startIndex} of ${tabs.length
+      `[PERF] Virtual rendered ${endIndex - startIndex} of ${
+        tabs.length
       } tabs in ${duration.toFixed(2)}ms`
     );
   }
@@ -1391,7 +1393,10 @@ kbd:hover {
     }
     tabCard.dataset.tabIndex = index;
     tabCard.setAttribute("role", "option");
-    tabCard.setAttribute("aria-selected", index === state.selectedIndex ? "true" : "false");
+    tabCard.setAttribute(
+      "aria-selected",
+      index === state.selectedIndex ? "true" : "false"
+    );
     tabCard.setAttribute("aria-label", `${tab.title} - ${tab.url}`);
     tabCard.tabIndex = -1; // Managed focus
     tabCard.style.transform = "translate3d(0, 0, 0)"; // GPU acceleration
@@ -1433,10 +1438,12 @@ kbd:hover {
 
       if (tab.mutedInfo?.muted) {
         muteBtn.classList.add("muted");
-        muteBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>';
+        muteBtn.innerHTML =
+          '<svg viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>';
       } else {
         // If not muted, show volume icon if audible, otherwise show volume icon on hover
-        muteBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
+        muteBtn.innerHTML =
+          '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
         // Only show persistently if audible
         if (tab.audible) {
           muteBtn.style.opacity = "0.9";
@@ -1486,7 +1493,9 @@ kbd:hover {
       const favicon = document.createElement("img");
       favicon.src = tab.favIconUrl;
       favicon.className = "tab-favicon";
-      favicon.onerror = () => { favicon.style.display = "none"; };
+      favicon.onerror = () => {
+        favicon.style.display = "none";
+      };
       header.appendChild(favicon);
     }
 
@@ -1577,10 +1586,7 @@ kbd:hover {
       }
 
       // Handle mute button
-      if (
-        target.dataset.action === "mute" ||
-        target.closest(".tab-mute-btn")
-      ) {
+      if (target.dataset.action === "mute" || target.closest(".tab-mute-btn")) {
         e.stopPropagation();
         const btn = target.closest(".tab-mute-btn");
         const tabId = parseInt(btn.dataset.tabId);
@@ -1851,8 +1857,8 @@ kbd:hover {
             : "Type to search web...",
           url: searchQuery
             ? `https://www.google.com/search?q=${encodeURIComponent(
-              searchQuery
-            )}`
+                searchQuery
+              )}`
             : "",
           favIconUrl: "https://www.google.com/favicon.ico",
           isWebSearch: true,
@@ -2051,10 +2057,7 @@ kbd:hover {
           state.selectedIndex < state.filteredTabs.length
         ) {
           const selectedTab = state.filteredTabs[state.selectedIndex];
-          if (
-            state.viewMode === "recent" &&
-            selectedTab?.sessionId
-          ) {
+          if (state.viewMode === "recent" && selectedTab?.sessionId) {
             restoreSession(selectedTab.sessionId);
           } else if (selectedTab?.isWebSearch) {
             window.open(
@@ -2169,8 +2172,6 @@ kbd:hover {
       console.error("[TAB SWITCHER] Error in selectNext:", error);
     }
   }
-
-
 
   function selectRight() {
     try {
@@ -2312,7 +2313,10 @@ kbd:hover {
       target.setAttribute("aria-selected", "true");
 
       // Update active descendant for screen readers
-      grid.setAttribute("aria-activedescendant", target.id || `tab-card-${state.selectedIndex}`);
+      grid.setAttribute(
+        "aria-activedescendant",
+        target.id || `tab-card-${state.selectedIndex}`
+      );
       if (!target.id) target.id = `tab-card-${state.selectedIndex}`;
 
       if (scrollIntoView) {
@@ -2389,14 +2393,17 @@ kbd:hover {
     try {
       if (!sessionId) return;
       try {
-        chrome.runtime.sendMessage({ action: "restoreSession", sessionId }, () => {
-          if (chrome.runtime.lastError) {
-            console.debug(
-              "[TAB SWITCHER] SW not ready (restoreSession):",
-              chrome.runtime.lastError.message
-            );
+        chrome.runtime.sendMessage(
+          { action: "restoreSession", sessionId },
+          () => {
+            if (chrome.runtime.lastError) {
+              console.debug(
+                "[TAB SWITCHER] SW not ready (restoreSession):",
+                chrome.runtime.lastError.message
+              );
+            }
           }
-        });
+        );
       } catch (msgErr) {
         console.debug(
           "[TAB SWITCHER] sendMessage warn:",
@@ -2512,7 +2519,10 @@ kbd:hover {
         { action: "toggleMute", tabId },
         (response) => {
           if (chrome.runtime.lastError) {
-            console.error("[TAB SWITCHER] Error toggling mute:", chrome.runtime.lastError);
+            console.error(
+              "[TAB SWITCHER] Error toggling mute:",
+              chrome.runtime.lastError
+            );
             return;
           }
 
@@ -2524,15 +2534,17 @@ kbd:hover {
             if (isMuted) {
               btnElement.classList.add("muted");
               btnElement.title = "Unmute tab";
-              btnElement.innerHTML = '<svg viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>';
+              btnElement.innerHTML =
+                '<svg viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>';
             } else {
               btnElement.classList.remove("muted");
               btnElement.title = "Mute tab";
-              btnElement.innerHTML = '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
+              btnElement.innerHTML =
+                '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
             }
 
             // Update internal state
-            const tab = state.currentTabs.find(t => t.id === tabId);
+            const tab = state.currentTabs.find((t) => t.id === tabId);
             if (tab) {
               if (!tab.mutedInfo) tab.mutedInfo = {};
               tab.mutedInfo.muted = isMuted;
@@ -2620,14 +2632,14 @@ kbd:hover {
 
     // Observe all lazy-load images
     const images = state.domCache.grid.querySelectorAll("img[data-src]");
-    images.forEach((img) => { state.intersectionObserver.observe(img); });
+    images.forEach((img) => {
+      state.intersectionObserver.observe(img);
+    });
   }
 
   // ============================================================================
   // UTILITY FUNCTIONS
   // ============================================================================
-
-
 
   // ============================================================================
   // INITIALIZATION
@@ -2639,6 +2651,4 @@ kbd:hover {
   );
   console.log("Target: <16ms interactions, 60fps, lazy loading");
   console.log("═══════════════════════════════════════════════════════");
-
-
 })();
