@@ -17,6 +17,7 @@
       if (window.top !== window) return;
 
       let lastReportedUrl = "";
+      let lastNavType = "";
 
       const sendNavigation = (forcedNavType) => {
         try {
@@ -26,10 +27,13 @@
           const navType =
             forcedNavType ||
             (() => {
+              // Try PerformanceNavigationTiming first (most reliable)
               const navEntries = performance.getEntriesByType?.("navigation");
               const navEntry = Array.isArray(navEntries) ? navEntries[0] : null;
-              if (navEntry && typeof navEntry.type === "string")
+              if (navEntry && typeof navEntry.type === "string") {
                 return navEntry.type;
+              }
+              // Fallback to deprecated API
               if (performance?.navigation) {
                 const legacy = performance.navigation.type;
                 if (legacy === 1) return "reload";
@@ -39,8 +43,14 @@
             })();
 
           // De-dupe noisy SPA signals (pushState + hashchange). Always report back/forward.
-          if (navType !== "back_forward" && url === lastReportedUrl) return;
+          if (
+            navType !== "back_forward" &&
+            url === lastReportedUrl &&
+            navType === lastNavType
+          )
+            return;
           lastReportedUrl = url;
+          lastNavType = navType;
 
           chrome.runtime.sendMessage(
             {
@@ -60,6 +70,30 @@
 
       // Initial report for this document.
       sendNavigation();
+
+      // Also report when document title changes (for better history titles)
+      const titleObserver = new MutationObserver(() => {
+        if (document.title && lastReportedUrl === location.href) {
+          chrome.runtime.sendMessage(
+            {
+              action: "REPORT_NAVIGATION",
+              url: location.href,
+              title: document.title,
+              navType: "title_update",
+            },
+            () => {}
+          );
+        }
+      });
+
+      const titleElement = document.querySelector("title");
+      if (titleElement) {
+        titleObserver.observe(titleElement, {
+          childList: true,
+          characterData: true,
+          subtree: true,
+        });
+      }
 
       // Back/forward with BFCache often fires pageshow with persisted=true.
       window.addEventListener("pageshow", (ev) => {
@@ -1152,6 +1186,7 @@ kbd:hover {
     keyThrottleMs: 16, // ~60fps
     resizeObserver: null,
     intersectionObserver: null,
+    focusInterval: null, // For periodic focus enforcement
   };
 
   // History view selection state
@@ -1404,23 +1439,26 @@ kbd:hover {
       renderTabsStandard(tabs);
     }
 
-    // Show overlay with GPU-accelerated fade-in
+    // Make visible immediately to allow focus and event trapping
+    // CRITICAL: We must set display:flex synchronously so focus() works
+    // and set isOverlayVisible=true so handleGlobalKeydown blocks events immediately.
+    state.overlay.style.display = "flex";
+    state.overlay.style.opacity = "0";
+    state.isOverlayVisible = true;
+
+    // Blur page and focus search immediately
+    blurPageElements();
+    if (state.domCache.searchBox) {
+      state.domCache.searchBox.value = "";
+      state.domCache.searchBox.focus();
+    }
+
+    // Animate opacity using RAF
     requestAnimationFrame(() => {
-      state.overlay.style.display = "flex";
-      state.overlay.style.opacity = "0";
-
       requestAnimationFrame(() => {
-        state.overlay.style.opacity = "1";
-        state.isOverlayVisible = true;
-
-        // Blur any focused page elements to prevent them from receiving input
-        blurPageElements();
-
-        // Focus search box AFTER overlay is visible (critical for auto-focus)
-        setTimeout(() => {
-          state.domCache.searchBox.value = "";
-          state.domCache.searchBox.focus();
-        }, 50); // Small delay ensures overlay is fully rendered
+        if (state.overlay) {
+          state.overlay.style.opacity = "1";
+        }
       });
     });
 
@@ -1437,8 +1475,32 @@ kbd:hover {
     document.addEventListener("keyup", handleGlobalKeydown, true);
     document.addEventListener("input", handleGlobalInput, true);
     document.addEventListener("beforeinput", handleGlobalInput, true);
+    document.addEventListener("textInput", handleGlobalInput, true);
     document.addEventListener("click", handleGlobalClick, true);
     document.addEventListener("mousedown", handleGlobalClick, true);
+
+    // Block composition events (for IME input on AI chat apps)
+    document.addEventListener(
+      "compositionstart",
+      handleGlobalComposition,
+      true
+    );
+    document.addEventListener(
+      "compositionupdate",
+      handleGlobalComposition,
+      true
+    );
+    document.addEventListener("compositionend", handleGlobalComposition, true);
+
+    // Periodic focus enforcement for aggressive apps that steal focus
+    state.focusInterval = setInterval(() => {
+      if (state.isOverlayVisible && state.domCache?.searchBox) {
+        // Check if focus is not in our shadow DOM
+        if (document.activeElement !== state.host) {
+          state.domCache.searchBox.focus();
+        }
+      }
+    }, 100);
 
     const duration = performance.now() - startTime;
     console.log(
@@ -2812,7 +2874,7 @@ kbd:hover {
     }
   }
 
-  // Block input/beforeinput events that target page elements
+  // Block input/beforeinput/textInput events that target page elements
   function handleGlobalInput(e) {
     if (!state.isOverlayVisible) return;
 
@@ -2821,9 +2883,33 @@ kbd:hover {
       e.stopImmediatePropagation();
       e.preventDefault();
 
-      if (state.domCache?.searchBox) {
+      // For beforeinput events, we may need to insert the data into our search box
+      if (e.type === "beforeinput" && e.data && state.domCache?.searchBox) {
+        const searchBox = state.domCache.searchBox;
+        searchBox.focus();
+        const start = searchBox.selectionStart || 0;
+        const end = searchBox.selectionEnd || 0;
+        const value = searchBox.value;
+        searchBox.value = value.slice(0, start) + e.data + value.slice(end);
+        searchBox.setSelectionRange(
+          start + e.data.length,
+          start + e.data.length
+        );
+        searchBox.dispatchEvent(new Event("input", { bubbles: true }));
+      } else if (state.domCache?.searchBox) {
         state.domCache.searchBox.focus();
       }
+    }
+  }
+
+  // Block composition events (for IME input)
+  function handleGlobalComposition(e) {
+    if (!state.isOverlayVisible) return;
+
+    if (!isEventFromOurExtension(e)) {
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      e.preventDefault();
     }
   }
 
@@ -3305,6 +3391,12 @@ kbd:hover {
           }
           state.isOverlayVisible = false;
 
+          // Clear focus enforcement interval
+          if (state.focusInterval) {
+            clearInterval(state.focusInterval);
+            state.focusInterval = null;
+          }
+
           // Cleanup
           document.removeEventListener("keydown", handleKeyDown);
           document.removeEventListener("keyup", handleKeyUp);
@@ -3317,8 +3409,26 @@ kbd:hover {
           document.removeEventListener("keyup", handleGlobalKeydown, true);
           document.removeEventListener("input", handleGlobalInput, true);
           document.removeEventListener("beforeinput", handleGlobalInput, true);
+          document.removeEventListener("textInput", handleGlobalInput, true);
           document.removeEventListener("click", handleGlobalClick, true);
           document.removeEventListener("mousedown", handleGlobalClick, true);
+
+          // Remove composition event listeners
+          document.removeEventListener(
+            "compositionstart",
+            handleGlobalComposition,
+            true
+          );
+          document.removeEventListener(
+            "compositionupdate",
+            handleGlobalComposition,
+            true
+          );
+          document.removeEventListener(
+            "compositionend",
+            handleGlobalComposition,
+            true
+          );
 
           if (state.intersectionObserver) {
             state.intersectionObserver.disconnect();
@@ -3330,6 +3440,10 @@ kbd:hover {
       console.error("[TAB SWITCHER] Error in closeOverlay:", error);
       // Force cleanup even on error
       state.isOverlayVisible = false;
+      if (state.focusInterval) {
+        clearInterval(state.focusInterval);
+        state.focusInterval = null;
+      }
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("keyup", handleKeyUp);
       document.removeEventListener("focus", handleGlobalFocus, true);
@@ -3339,8 +3453,24 @@ kbd:hover {
       document.removeEventListener("keyup", handleGlobalKeydown, true);
       document.removeEventListener("input", handleGlobalInput, true);
       document.removeEventListener("beforeinput", handleGlobalInput, true);
+      document.removeEventListener("textInput", handleGlobalInput, true);
       document.removeEventListener("click", handleGlobalClick, true);
       document.removeEventListener("mousedown", handleGlobalClick, true);
+      document.removeEventListener(
+        "compositionstart",
+        handleGlobalComposition,
+        true
+      );
+      document.removeEventListener(
+        "compositionupdate",
+        handleGlobalComposition,
+        true
+      );
+      document.removeEventListener(
+        "compositionend",
+        handleGlobalComposition,
+        true
+      );
     }
   }
 

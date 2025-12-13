@@ -1396,6 +1396,13 @@ async function handleMessage(request, sender, sendResponse) {
             return;
           }
 
+          // Handle title updates without modifying history
+          if (navType === "title_update") {
+            await historyTracker.updateCurrentTitle(tabId, url, title);
+            sendResponse({ success: true, type: "title_update" });
+            return;
+          }
+
           // Ignore reloads so they don't duplicate entries.
           if (navType === "reload") {
             await historyTracker.initializeTab(tabId, url, title);
