@@ -1,4 +1,4 @@
-# ⚡ Visual Tab Switcher
+# <img src="./icons/icon128.png" width="40" height="40" style="vertical-align: bottom; margin-right: 10px;"> Browser Tab Switch
 
 ![Extension Preview](./preview.png)
 
@@ -45,6 +45,7 @@ Replace the default browser tab cycle with a beautiful, Mac-like "Mission Contro
 | **`Delete`** / **`Backspace`** | Close selected tab                             |
 | **`/`**                        | View Tab History (Back/Forward)                |
 | **`.`**                        | View Recently Closed Tabs                      |
+| **`?`** (Shift + /)            | Web Search                                     |
 | **`Esc`**                      | Close Switcher                                 |
 
 > **Pro Tip:** You can map this extension to `Ctrl+Tab` in `chrome://extensions/shortcuts` for a native replacement feel.

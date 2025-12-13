@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Visual Tab Switcher",
+  "name": "Browser Tab Switch",
   "version": "1.0.0",
   "description": "A visual tab switcher with thumbnail previews - navigate tabs with keyboard shortcuts, mouse clicks, or arrow keys",
   "permissions": [

@@ -1,7 +1,7 @@
 {
-  "name": "visual-tab-switcher",
+  "name": "browser-tab-switch",
   "version": "1.0.0",
-  "description": "Visual Tab Switcher Extension",
+  "description": "Browser Tab Switch Extension",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
