@@ -11,6 +11,7 @@
         --surface: #242429;
         --surface-container: #2d2d33;
         --card: #35353d;
+
         --card-hover: #42424b;
         --text: #f4f4f8;
         --text-secondary: #c9c9d0;
@@ -58,7 +59,8 @@
       body {
         width: 380px;
         padding: 24px;
-        font-family: "Google Sans", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+        font-family: "Google Sans", "Segoe UI", -apple-system,
+          BlinkMacSystemFont, Roboto, sans-serif;
         background: var(--bg);
         color: var(--text);
         -webkit-font-smoothing: antialiased;
@@ -74,7 +76,11 @@
       .logo {
         width: 48px;
         height: 48px;
-        background: linear-gradient(135deg, var(--card) 0%, var(--card-hover) 100%);
+        background: linear-gradient(
+          135deg,
+          var(--card) 0%,
+          var(--card-hover) 100%
+        );
         border: 1px solid var(--border-glow);
         border-radius: var(--radius-md);
         display: flex;
@@ -223,7 +229,11 @@
       .button {
         width: 100%;
         padding: 16px 20px;
-        background: linear-gradient(180deg, var(--text) 0%, var(--text-secondary) 100%);
+        background: linear-gradient(
+          180deg,
+          var(--text) 0%,
+          var(--text-secondary) 100%
+        );
         border: none;
         border-radius: var(--radius-lg);
         color: var(--bg);
@@ -267,6 +277,7 @@
       }
     </style>
   </head>
+
   <body>
     <div class="header">
       <div class="logo">⚡</div>
@@ -299,6 +310,7 @@
         <li><kbd>Enter</kbd> Switch tab</li>
         <li><kbd>Delete</kbd> Close tab</li>
         <li><kbd>.</kbd> Recently closed</li>
+        <li><kbd>/</kbd> Tab history (back/forward)</li>
         <li><kbd>Esc</kbd> Close overlay</li>
         <li>Type to search</li>
       </ul>
