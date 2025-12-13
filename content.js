@@ -358,20 +358,50 @@
 }
 
 .tab-switcher-grid::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .tab-switcher-grid::-webkit-scrollbar-track {
   background: transparent;
+  margin: 4px 0;
 }
 
 .tab-switcher-grid::-webkit-scrollbar-thumb {
-  background: var(--border-subtle);
-  border-radius: var(--radius-xs);
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 100px;
+  transition: background 0.2s ease;
 }
 
 .tab-switcher-grid::-webkit-scrollbar-thumb:hover {
-  background: var(--border-hover);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.tab-switcher-grid::-webkit-scrollbar-thumb:active {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Firefox modern scrollbar */
+.tab-switcher-grid {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+@media (prefers-color-scheme: light) {
+  .tab-switcher-grid::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.12);
+  }
+  
+  .tab-switcher-grid::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.2);
+  }
+  
+  .tab-switcher-grid::-webkit-scrollbar-thumb:active {
+    background: rgba(0, 0, 0, 0.3);
+  }
+  
+  .tab-switcher-grid {
+    scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+  }
 }
 
 /* Empty State */
@@ -961,7 +991,50 @@ kbd:hover {
     flex-direction: column;
     gap: 8px;
     overflow-y: auto;
-    padding-right: 8px;
+    padding-right: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.history-column::-webkit-scrollbar {
+    width: 5px;
+}
+
+.history-column::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 4px 0;
+}
+
+.history-column::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 100px;
+    transition: background 0.2s ease;
+}
+
+.history-column::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.history-column::-webkit-scrollbar-thumb:active {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+@media (prefers-color-scheme: light) {
+    .history-column {
+        scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+    }
+    
+    .history-column::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.12);
+    }
+    
+    .history-column::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 0, 0, 0.2);
+    }
+    
+    .history-column::-webkit-scrollbar-thumb:active {
+        background: rgba(0, 0, 0, 0.3);
+    }
 }
 
 .history-column-header {
@@ -1030,6 +1103,13 @@ kbd:hover {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* History items container */
+.history-items-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 `;
 
@@ -2156,18 +2236,24 @@ kbd:hover {
 
     const backHeader = document.createElement("div");
     backHeader.className = "history-column-header";
-    backHeader.textContent = "← Back";
+    backHeader.textContent = "← BACK";
     backCol.appendChild(backHeader);
 
     if (historyData.back && historyData.back.length > 0) {
+      // Create container for history items
+      const backItemsContainer = document.createElement("div");
+      backItemsContainer.className = "history-items-container";
+
       historyData.back.forEach((entry, index) => {
         // Back history is reversed (most recent first), so index 0 is -1
         const item = createHistoryItem(entry, -(index + 1));
         item.dataset.column = "back";
         item.dataset.index = String(index);
-        backCol.appendChild(item);
+        backItemsContainer.appendChild(item);
         state.history.backEls.push(item);
       });
+
+      backCol.appendChild(backItemsContainer);
     } else {
       const empty = document.createElement("div");
       empty.className = "tab-switcher-empty";
@@ -2184,17 +2270,23 @@ kbd:hover {
 
     const fwdHeader = document.createElement("div");
     fwdHeader.className = "history-column-header";
-    fwdHeader.textContent = "Forward →";
+    fwdHeader.textContent = "FORWARD →";
     fwdCol.appendChild(fwdHeader);
 
     if (historyData.forward && historyData.forward.length > 0) {
+      // Create container for history items
+      const fwdItemsContainer = document.createElement("div");
+      fwdItemsContainer.className = "history-items-container";
+
       historyData.forward.forEach((entry, index) => {
         const item = createHistoryItem(entry, index + 1); // +1, +2, ...
         item.dataset.column = "forward";
         item.dataset.index = String(index);
-        fwdCol.appendChild(item);
+        fwdItemsContainer.appendChild(item);
         state.history.forwardEls.push(item);
       });
+
+      fwdCol.appendChild(fwdItemsContainer);
     } else {
       const empty = document.createElement("div");
       empty.className = "tab-switcher-empty";
@@ -2301,6 +2393,7 @@ kbd:hover {
 
     const list = state.history.column === "forward" ? forwardEls : backEls;
     if (!list.length) return;
+
     const idx = Math.min(Math.max(0, state.history.index), list.length - 1);
     state.history.index = idx;
     const selected = list[idx];
