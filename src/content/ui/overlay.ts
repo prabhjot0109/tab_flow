@@ -1,24 +1,25 @@
-import { state } from "../state.js";
-import { SHADOW_CSS, SHADOW_HOST_ID } from "./styles.js";
+import { state } from "../state";
+import { SHADOW_CSS, SHADOW_HOST_ID } from "./styles";
 import {
   closeOverlay,
   switchToActive,
   switchToRecent,
   setViewMode,
-} from "../actions.js";
-import { createSmartSearchHandler } from "../input/search.js";
+} from "../actions";
+import { createSmartSearchHandler } from "../input/search";
 import {
   handleSearchKeydown,
   handleGridClick,
   handleKeyDown,
   handleKeyUp,
-} from "../input/keyboard.js";
+} from "../input/keyboard";
 import {
   renderTabsStandard,
   renderTabsVirtual,
   enforceSingleSelection,
-} from "./rendering.js";
-import * as focus from "../input/focus.js";
+  applyGroupViewTransformation,
+} from "./rendering";
+import * as focus from "../input/focus";
 
 export function ensureShadowRoot() {
   try {
@@ -196,17 +197,56 @@ export function createOverlay() {
   );
 }
 
-export function showTabSwitcher(tabs, activeTabId) {
+export function showTabSwitcher(tabs, activeTabId, groups = []) {
   const startTime = performance.now();
 
-  console.log(`[TAB SWITCHER] Opening with ${tabs.length} tabs`);
+  console.log(
+    `[TAB SWITCHER] Opening with ${tabs.length} tabs and ${groups.length} groups`
+  );
 
-  if (state.isOverlayVisible) return;
+  if (state.isOverlayVisible && !state.isClosing) return;
+
+  // Cancel any pending close
+  if (state.closeTimeout) {
+    clearTimeout(state.closeTimeout);
+    state.closeTimeout = null;
+  }
+  state.isClosing = false;
+  state.isOverlayVisible = true;
 
   createOverlay();
+
+  // Ensure visual state is correct immediately
+  if (state.overlay) {
+    state.overlay.style.display = "flex";
+    // Force a reflow or just assume RAF handles the transition reset?
+    // If we are fading out (opacity 0.5 -> 0), we want to snap back to 1 or fade in?
+    // Use RAF to ensure it transitions nicely if possible, or just snap if it feels faster.
+    // Snapping to 1 is safer for "instant" feel if user mashed the key.
+
+    // But let's keep the fade-in animation logic from below, just ensure we start from current opacity if possible.
+    // Actually, standard logic below sets opacity to 0 then 1.
+    // If we are "rescuing" a closing overlay, we might just want to set opacity 1.
+
+    // Let's assume standard flow:
+    // If we are recovering, we might want to skip the "set opacity 0" step if it's already visible?
+    // No, let's keep it simple: Reset to 0 then animate to 1 ensures consistency, BUT causes flicker if it was at 0.5.
+
+    // Better:
+    // If it was closing, we want to reverse the fade (0 -> 1).
+    // If it was already visible (but closing), opacity is animating to 0.
+    // We set it to computed style opacity?
+    // state.overlay.style.opacity = "0" was set in closeOverlay.
+    // So it is fading to 0.
+
+    // Let's just reset the animation.
+    state.overlay.style.opacity = "0";
+  }
+
   state.activeTabs = tabs;
   state.currentTabs = tabs;
-  state.filteredTabs = tabs;
+  state.filteredTabs = applyGroupViewTransformation(tabs);
+  state.groups = groups;
   setViewMode("active");
 
   // Start selection at the second tab (most recently used that isn't current)

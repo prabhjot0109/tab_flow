@@ -1,8 +1,8 @@
 import "./utils/messaging.js";
-import { state } from "./state.js";
-import { showTabSwitcher } from "./ui/overlay.js";
-import { selectNext } from "./input/keyboard.js";
-import { enforceSingleSelection } from "./ui/rendering.js";
+import { state } from "./state";
+import { showTabSwitcher } from "./ui/overlay";
+import { selectNext } from "./input/keyboard";
+import { enforceSingleSelection } from "./ui/rendering";
 
 console.log("═══════════════════════════════════════════════════════");
 console.log("Visual Tab Switcher - Content Script Loaded");
@@ -20,7 +20,7 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
       sendResponse({ success: true, advanced: true });
       return true;
     }
-    showTabSwitcher(request.tabs, request.activeTabId);
+    showTabSwitcher(request.tabs, request.activeTabId, request.groups);
     sendResponse({ success: true });
   }
   return true;

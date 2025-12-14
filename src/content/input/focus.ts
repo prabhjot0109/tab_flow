@@ -1,4 +1,4 @@
-import { state } from "../state.js";
+import { state } from "../state";
 
 // Blur all focusable elements on the page to prevent they from receiving input
 export function blurPageElements() {

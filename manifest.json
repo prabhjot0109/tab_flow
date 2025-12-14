@@ -5,6 +5,7 @@
   "description": "A visual tab switcher with thumbnail previews - navigate tabs with keyboard shortcuts, mouse clicks, or arrow keys",
   "permissions": [
     "tabs",
+    "tabGroups",
     "activeTab",
     "storage",
     "scripting",
@@ -14,12 +15,12 @@
   ],
   "host_permissions": ["<all_urls>"],
   "background": {
-    "service_worker": "src/background/index.js"
+    "service_worker": "src/background/index.ts"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["src/content/index.js"],
+      "js": ["src/content/index.ts"],
       "run_at": "document_idle",
       "all_frames": false
     }

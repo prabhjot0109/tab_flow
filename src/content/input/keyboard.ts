@@ -1,6 +1,19 @@
-import { state } from '../state.js';
-import { closeOverlay, switchToTab, toggleMute, restoreSession, closeTab, switchToActive, switchToRecent } from '../actions.js';
-import { updateSelection, updateHistorySelection, activateSelectedHistoryItem } from '../ui/rendering.js';
+import { state } from "../state";
+import {
+  closeOverlay,
+  switchToTab,
+  toggleMute,
+  restoreSession,
+  closeTab,
+  switchToActive,
+  switchToRecent,
+  createGroup,
+} from "../actions";
+import {
+  updateSelection,
+  updateHistorySelection,
+  activateSelectedHistoryItem,
+} from "../ui/rendering";
 
 export function handleGridClick(e) {
   try {
@@ -250,6 +263,24 @@ export function handleKeyDown(e) {
           const tab = state.filteredTabs[state.selectedIndex];
           if (tab?.id) {
             closeTab(tab.id, state.selectedIndex);
+          }
+        }
+        break;
+
+      case "g":
+      case "G":
+        if (e.altKey) {
+          e.preventDefault();
+          if (
+            state.viewMode !== "recent" &&
+            state.filteredTabs.length > 0 &&
+            state.selectedIndex >= 0 &&
+            state.selectedIndex < state.filteredTabs.length
+          ) {
+            const tab = state.filteredTabs[state.selectedIndex];
+            if (tab?.id) {
+              createGroup(tab.id);
+            }
           }
         }
         break;

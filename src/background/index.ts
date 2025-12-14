@@ -11,24 +11,28 @@
 // INDEXEDDB STORAGE WRAPPER
 // ============================================================================
 class SimpleIDB {
-  constructor(dbName, storeName) {
-    this.dbName = dbName;
+  private dbName: string;
+  private storeName: string;
+  private db: IDBDatabase | null;
+  private initPromise: Promise<IDBDatabase | void>;
 
+  constructor(dbName: string, storeName: string) {
+    this.dbName = dbName;
     this.storeName = storeName;
     this.db = null;
     this.initPromise = this._open();
   }
 
-  _open() {
+  _open(): Promise<IDBDatabase> {
     return new Promise((resolve, reject) => {
       const request = indexedDB.open(this.dbName, 1);
       request.onerror = () => reject(request.error);
       request.onsuccess = () => {
         this.db = request.result;
-        resolve(this.db);
+        resolve(this.db!);
       };
       request.onupgradeneeded = (event) => {
-        const db = event.target.result;
+        const db = (event.target as IDBOpenDBRequest)!.result;
         if (!db.objectStoreNames.contains(this.storeName)) {
           db.createObjectStore(this.storeName);
         }
@@ -47,9 +51,13 @@ class SimpleIDB {
     });
   }
 
-  async getAllKeys() {
+  async getAllKeys(): Promise<IDBValidKey[]> {
     await this.initPromise;
     return new Promise((resolve, reject) => {
+      if (!this.db) {
+        reject(new Error("DB not initialized"));
+        return;
+      }
       const transaction = this.db.transaction([this.storeName], "readonly");
       const store = transaction.objectStore(this.storeName);
       const request = store.getAllKeys();
@@ -58,9 +66,13 @@ class SimpleIDB {
     });
   }
 
-  async set(key, value) {
+  async set(key: IDBValidKey, value: any): Promise<void> {
     await this.initPromise;
     return new Promise((resolve, reject) => {
+      if (!this.db) {
+        reject(new Error("DB not initialized"));
+        return;
+      }
       const transaction = this.db.transaction([this.storeName], "readwrite");
       const store = transaction.objectStore(this.storeName);
       const request = store.put(value, key);
@@ -69,9 +81,13 @@ class SimpleIDB {
     });
   }
 
-  async delete(key) {
+  async delete(key: IDBValidKey): Promise<void> {
     await this.initPromise;
     return new Promise((resolve, reject) => {
+      if (!this.db) {
+        reject(new Error("DB not initialized"));
+        return;
+      }
       const transaction = this.db.transaction([this.storeName], "readwrite");
       const store = transaction.objectStore(this.storeName);
       const request = store.delete(key);
@@ -80,9 +96,13 @@ class SimpleIDB {
     });
   }
 
-  async clear() {
+  async clear(): Promise<void> {
     await this.initPromise;
     return new Promise((resolve, reject) => {
+      if (!this.db) {
+        reject(new Error("DB not initialized"));
+        return;
+      }
       const transaction = this.db.transaction([this.storeName], "readwrite");
       const store = transaction.objectStore(this.storeName);
       const request = store.clear();
@@ -95,7 +115,21 @@ class SimpleIDB {
 // ============================================================================
 // LRU CACHE IMPLEMENTATION (WITH PERSISTENCE)
 // ============================================================================
+interface CacheEntry {
+  data: string; // base64
+  size: number;
+  timestamp: number;
+}
+
 class LRUCache {
+  private cache: Map<number, CacheEntry>;
+  private maxTabs: number;
+  private maxBytes: number;
+  private currentBytes: number;
+  private accessOrder: number[];
+  private storage: SimpleIDB;
+  public ready: Promise<void>;
+
   constructor(maxTabs = 30, maxBytes = 20 * 1024 * 1024) {
     this.cache = new Map(); // Map for O(1) access
     this.maxTabs = maxTabs;
@@ -119,7 +153,7 @@ class LRUCache {
       // Reconstruct cache
       keys.forEach((key, index) => {
         const value = values[index];
-        if (value && value.data) {
+        if (value && typeof key === "number" && value.data) {
           this.cache.set(key, value);
           this.currentBytes += value.size;
         }
@@ -139,7 +173,7 @@ class LRUCache {
   }
 
   // Get item and mark as recently used
-  get(key) {
+  get(key: number): CacheEntry | null {
     if (!this.cache.has(key)) return null;
 
     // Move to front of access order (most recent)
@@ -147,7 +181,7 @@ class LRUCache {
     this.accessOrder.unshift(key);
 
     // Update timestamp in background for persistence
-    const entry = this.cache.get(key);
+    const entry = this.cache.get(key)!;
     entry.timestamp = Date.now();
     this.storage
       .set(key, entry)
@@ -157,7 +191,7 @@ class LRUCache {
   }
 
   // Set item with automatic eviction
-  set(key, value) {
+  set(key: number, value: string) {
     const size = this._estimateSize(value);
 
     // Remove existing entry if updating
@@ -191,7 +225,7 @@ class LRUCache {
   }
 
   // Remove specific entry
-  delete(key) {
+  delete(key: number) {
     if (!this.cache.has(key)) return false;
 
     const entry = this.cache.get(key);
@@ -228,7 +262,7 @@ class LRUCache {
   }
 
   // Estimate size of base64 screenshot
-  _estimateSize(data) {
+  _estimateSize(data: string) {
     // Base64 string size in bytes
     return Math.ceil(data.length * 0.75); // Base64 is ~33% larger than binary
   }
@@ -273,11 +307,11 @@ const PERF_CONFIG = {
 
   // Quality tiers for memory optimization
   QUALITY_TIERS: {
-    HIGH: { quality: 60, maxSize: 200 * 1024, label: "High Quality" },
-    NORMAL: { quality: 50, maxSize: 150 * 1024, label: "Normal" },
-    PERFORMANCE: { quality: 35, maxSize: 100 * 1024, label: "Performance" },
-  },
-  DEFAULT_QUALITY_TIER: "NORMAL", // Default quality tier
+    HIGH: { quality: 80, maxSize: 300 * 1024, label: "High Quality" },
+    NORMAL: { quality: 60, maxSize: 200 * 1024, label: "Normal" },
+    PERFORMANCE: { quality: 40, maxSize: 100 * 1024, label: "Performance" },
+  } as Record<string, { quality: number; maxSize: number; label: string }>,
+  DEFAULT_QUALITY_TIER: "PERFORMANCE", // Default quality tier
 };
 
 // ============================================================================
@@ -287,26 +321,34 @@ const screenshotCache = new LRUCache(
   PERF_CONFIG.MAX_CACHED_TABS,
   PERF_CONFIG.MAX_CACHE_BYTES
 );
-let recentTabOrder = []; // Track tab access order (most recent first) - will be restored from storage
-const tabOpenOrder = new Map(); // Track when tabs were opened (tabId -> timestamp)
-const captureQueue = []; // Queue for rate-limited captures
+let recentTabOrder: number[] = []; // Track tab access order (most recent first) - will be restored from storage
+const tabOpenOrder = new Map<number, number>(); // Track when tabs were opened (tabId -> timestamp)
+const captureQueue: { tabId: number; timestamp: number }[] = []; // Queue for rate-limited captures
 let lastCaptureTime = 0; // Timestamp of last capture
 let isProcessingQueue = false; // Queue processing flag
-let previousActiveTabId = null; // Track previous active tab for better screenshot capture
+let previousActiveTabId: number | null = null; // Track previous active tab for better screenshot capture
 let currentQualityTier = PERF_CONFIG.DEFAULT_QUALITY_TIER; // Current quality setting
-const pendingCaptures = new Set(); // Track tabs with pending captures to avoid duplicates
+const pendingCaptures = new Set<number>(); // Track tabs with pending captures to avoid duplicates
 let recentOrderRestored = false; // Flag to track if recent order has been restored
 
 // ============================================================================
 // PERFORMANCE MONITORING
 // ============================================================================
-const perfMetrics = {
+const perfMetrics: {
+  overlayOpenTimes: number[];
+  captureCount: number;
+  cacheHits: number;
+  cacheMisses: number;
+  recordOverlayOpen: (duration: number) => void;
+  getAverageOverlayTime: () => number;
+  logStats: () => void;
+} = {
   overlayOpenTimes: [],
   captureCount: 0,
   cacheHits: 0,
   cacheMisses: 0,
 
-  recordOverlayOpen(duration) {
+  recordOverlayOpen(duration: number) {
     this.overlayOpenTimes.push(duration);
     if (this.overlayOpenTimes.length > 100) this.overlayOpenTimes.shift();
 
@@ -353,7 +395,7 @@ const perfMetrics = {
 // ============================================================================
 
 // Add capture to queue
-function queueCapture(tabId, priority = false) {
+function queueCapture(tabId: number, priority = false) {
   // Check if already in queue or pending
   if (
     captureQueue.some((item) => item.tabId === tabId) ||
@@ -390,12 +432,14 @@ async function processQueue() {
     }
 
     const item = captureQueue.shift();
-    pendingCaptures.add(item.tabId);
+    if (item && item.tabId) {
+      pendingCaptures.add(item.tabId);
 
-    try {
-      await captureTabScreenshot(item.tabId);
-    } finally {
-      pendingCaptures.delete(item.tabId);
+      try {
+        await captureTabScreenshot(item.tabId);
+      } finally {
+        pendingCaptures.delete(item.tabId);
+      }
     }
 
     lastCaptureTime = Date.now();
@@ -407,7 +451,10 @@ async function processQueue() {
 // Capture screenshot with error handling and compression
 // This function captures the currently visible tab in the specified window.
 // It should only be called when the target tab is active and visible.
-async function captureTabScreenshot(tabId, forceQuality = null) {
+async function captureTabScreenshot(
+  tabId: number,
+  forceQuality: string | null = null
+) {
   try {
     const tab = await chrome.tabs.get(tabId);
 
@@ -510,7 +557,7 @@ async function captureTabScreenshot(tabId, forceQuality = null) {
 }
 
 // Check if tab can be captured and injected
-function isTabCapturable(tab) {
+function isTabCapturable(tab: chrome.tabs.Tab): boolean {
   if (tab.discarded) return false;
   if (!tab.url) return false;
 
@@ -523,7 +570,10 @@ function isTabCapturable(tab) {
   ];
 
   // Check protected schemes
-  if (protectedSchemes.some((scheme) => tab.url.startsWith(scheme))) {
+  if (
+    tab.url &&
+    protectedSchemes.some((scheme) => tab.url!.startsWith(scheme))
+  ) {
     return false;
   }
 
@@ -537,47 +587,56 @@ function isTabCapturable(tab) {
 // Defensive check for chrome.tabs API availability
 if (typeof chrome !== "undefined" && chrome.tabs) {
   // Listen for tab activation - auto-capture screenshots
-  chrome.tabs.onActivated.addListener(async (activeInfo) => {
-    try {
-      // Update tracking immediately
-      previousActiveTabId = activeInfo.tabId;
-      updateRecentTabOrder(activeInfo.tabId);
+  chrome.tabs.onActivated.addListener(
+    async (activeInfo: chrome.tabs.TabActiveInfo) => {
+      try {
+        // Update tracking immediately
+        previousActiveTabId = activeInfo.tabId;
+        activeTabStartTime = Date.now();
+        updateRecentTabOrder(activeInfo.tabId);
 
-      // Capture the newly activated tab after a short delay to let it render
-      setTimeout(() => {
-        queueCapture(activeInfo.tabId, true);
-      }, 200);
-    } catch (e) {
-      console.debug("[TAB] Error in onActivated:", e);
+        // Capture the newly activated tab after a short delay to let it render
+        setTimeout(() => {
+          queueCapture(activeInfo.tabId, true);
+        }, 200);
+      } catch (e) {
+        console.debug("[TAB] Error in onActivated:", e);
+      }
     }
-  });
+  );
 
   // Listen for tab updates (page load complete) - capture screenshot
-  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    try {
-      // Capture when page finishes loading and tab is active
-      if (changeInfo.status === "complete" && tab.active) {
-        // Delay capture to ensure page is fully rendered
-        setTimeout(() => {
-          queueCapture(tabId, true);
-        }, 300);
+  chrome.tabs.onUpdated.addListener(
+    (
+      tabId: number,
+      changeInfo: chrome.tabs.TabChangeInfo,
+      tab: chrome.tabs.Tab
+    ) => {
+      try {
+        // Capture when page finishes loading and tab is active
+        if (changeInfo.status === "complete" && tab.active) {
+          // Delay capture to ensure page is fully rendered
+          setTimeout(() => {
+            queueCapture(tabId, true);
+          }, 300);
+        }
+      } catch (e) {
+        console.debug("[TAB] Error in onUpdated:", e);
       }
-    } catch (e) {
-      console.debug("[TAB] Error in onUpdated:", e);
     }
-  });
+  );
 
   // Track when tabs are created for open order
-  chrome.tabs.onCreated.addListener((tab) => {
+  chrome.tabs.onCreated.addListener((tab: chrome.tabs.Tab) => {
     try {
-      tabOpenOrder.set(tab.id, Date.now());
+      if (tab.id) tabOpenOrder.set(tab.id, Date.now());
     } catch (e) {
       console.debug("[TAB] Error in onCreated:", e);
     }
   });
 
   // Clean up when tabs are closed
-  chrome.tabs.onRemoved.addListener((tabId) => {
+  chrome.tabs.onRemoved.addListener((tabId: number) => {
     try {
       screenshotCache.delete(tabId);
       removeFromRecentOrder(tabId);
@@ -592,8 +651,31 @@ if (typeof chrome !== "undefined" && chrome.tabs) {
   console.error("[INIT] chrome.tabs API not available");
 }
 
+// Global variable for idle tracking
+let activeTabStartTime = Date.now();
+
+// Idle Capture Strategy: Re-capture tabs if user stays on them > 5 minutes
+setInterval(async () => {
+  try {
+    if (!previousActiveTabId) return;
+
+    // Check if user is idle on the current tab for > 5 mins
+    const idleThreshold = 5 * 60 * 1000;
+    if (Date.now() - activeTabStartTime > idleThreshold) {
+      console.debug(
+        `[IDLE] Tab ${previousActiveTabId} idle > 5m, refreshing screenshot`
+      );
+      // Update start time to avoid repeated captures every minute
+      activeTabStartTime = Date.now();
+      queueCapture(previousActiveTabId, true);
+    }
+  } catch (error) {
+    console.debug("[IDLE] Error in idle check:", error);
+  }
+}, 60 * 1000); // Check every minute
+
 // Update tab order tracking
-function updateRecentTabOrder(tabId) {
+function updateRecentTabOrder(tabId: number) {
   removeFromRecentOrder(tabId);
   recentTabOrder.unshift(tabId);
 
@@ -614,7 +696,7 @@ function removeFromRecentOrder(tabId) {
 }
 
 // Debounced save to avoid too many writes
-let saveRecentOrderTimer = null;
+let saveRecentOrderTimer: ReturnType<typeof setTimeout> | null = null;
 function saveRecentOrderDebounced() {
   if (saveRecentOrderTimer) clearTimeout(saveRecentOrderTimer);
   saveRecentOrderTimer = setTimeout(() => {
@@ -667,9 +749,19 @@ async function handleShowTabSwitcher() {
   const startTime = performance.now();
 
   try {
-    // Get current window tabs
+    // Get current window tabs and groups
     const currentWindow = await chrome.windows.getCurrent();
     const tabs = await chrome.tabs.query({ windowId: currentWindow.id });
+
+    // Fetch tab groups if API is available
+    let groups: chrome.tabGroups.TabGroup[] = [];
+    if (chrome.tabGroups) {
+      try {
+        groups = await chrome.tabGroups.query({ windowId: currentWindow.id });
+      } catch (e) {
+        console.debug("[GROUPS] Failed to fetch groups:", e);
+      }
+    }
 
     // Initialize open order for tabs we haven't seen yet
     const now = Date.now();
@@ -714,8 +806,16 @@ async function handleShowTabSwitcher() {
         active: tab.active,
         audible: tab.audible,
         mutedInfo: tab.mutedInfo,
+        groupId: tab.groupId,
       };
     });
+
+    const groupsData = groups.map((g) => ({
+      id: g.id,
+      title: g.title,
+      color: g.color,
+      collapsed: g.collapsed,
+    }));
 
     // Get active tab
     const [activeTab] = await chrome.tabs.query({
@@ -735,6 +835,7 @@ async function handleShowTabSwitcher() {
     await sendMessageWithRetry(activeTab.id, {
       action: "showTabSwitcher",
       tabs: tabsData,
+      groups: groupsData,
       activeTabId: activeTab.id,
     });
 
@@ -747,14 +848,18 @@ async function handleShowTabSwitcher() {
 }
 
 // Import content script via CRXJS special query to get output filename
-import contentScriptPath from "../content/index.js?script";
+import contentScriptPath from "../content/index.ts?script";
 
 // Send message with automatic script injection
-async function sendMessageWithRetry(tabId, message, retries = 1) {
+async function sendMessageWithRetry(tabId: number, message: any, retries = 1) {
   try {
     await chrome.tabs.sendMessage(tabId, message);
-  } catch (err) {
-    if (retries > 0 && err.message.includes("Could not establish connection")) {
+  } catch (err: any) {
+    if (
+      retries > 0 &&
+      err.message &&
+      err.message.includes("Could not establish connection")
+    ) {
       console.log("[INJECT] Content script not ready, injecting...");
 
       try {
@@ -767,7 +872,7 @@ async function sendMessageWithRetry(tabId, message, retries = 1) {
         // Retry after injection
         await new Promise((resolve) => setTimeout(resolve, 150));
         await chrome.tabs.sendMessage(tabId, message);
-      } catch (injectErr) {
+      } catch (injectErr: any) {
         const msg = injectErr && injectErr.message ? injectErr.message : "";
         const protectedErr =
           msg.includes("cannot be scripted") ||
@@ -790,37 +895,49 @@ async function sendMessageWithRetry(tabId, message, retries = 1) {
 
 // Sort tabs by recent usage (most recently accessed first)
 // Falls back to tab open order for tabs not yet accessed
-function sortTabsByRecent(tabs) {
+function sortTabsByRecent(tabs: chrome.tabs.Tab[]): chrome.tabs.Tab[] {
   return [...tabs].sort((a, b) => {
-    const aRecentIndex = recentTabOrder.indexOf(a.id);
-    const bRecentIndex = recentTabOrder.indexOf(b.id);
+    const aRecentIndex = a.id ? recentTabOrder.indexOf(a.id) : -1;
+    const bRecentIndex = b.id ? recentTabOrder.indexOf(b.id) : -1;
 
     // Both in recent order - sort by recency (lower index = more recent)
     if (aRecentIndex !== -1 && bRecentIndex !== -1) {
       return aRecentIndex - bRecentIndex;
     }
 
-    // Only one in recent order - prioritize the one that was accessed
+    // One in recent, one not
     if (aRecentIndex !== -1) return -1;
     if (bRecentIndex !== -1) return 1;
 
-    // Neither accessed yet - sort by open order (newer tabs first)
-    const aOpenTime = tabOpenOrder.get(a.id) || 0;
-    const bOpenTime = tabOpenOrder.get(b.id) || 0;
+    // Neither in recent - sort by open time (newer first)
+    // Fallback to ID if no time tracked
+    const aTime = tabOpenOrder.get(a.id!) || 0;
+    const bTime = tabOpenOrder.get(b.id!) || 0;
 
-    if (aOpenTime !== bOpenTime) {
-      return bOpenTime - aOpenTime; // Newer tabs first
+    if (aTime !== bTime) {
+      return bTime - aTime;
     }
 
-    // Final fallback: sort by tab index (position in tab bar)
-    return a.index - b.index;
+    return b.index - a.index;
   });
 }
 
 // ============================================================================
 // TAB HISTORY TRACKER (Back/Forward Support)
 // ============================================================================
+interface HistoryEntry {
+  url: string;
+  title: string;
+}
+
+interface HistoryData {
+  stack: (string | HistoryEntry)[];
+  currentIndex: number;
+}
+
 class TabHistoryTracker {
+  private storage: chrome.storage.LocalStorageArea;
+
   constructor() {
     this.storage = chrome.storage.local; // Use local storage for persistence
     this.init();
@@ -866,7 +983,8 @@ class TabHistoryTracker {
         if (
           tab.url &&
           !tab.url.startsWith("chrome://") &&
-          !tab.url.startsWith("edge://")
+          !tab.url.startsWith("edge://") &&
+          tab.id
         ) {
           await this.initializeTab(tab.id, tab.url, tab.title);
         }
@@ -877,7 +995,7 @@ class TabHistoryTracker {
   }
 
   // Initialize a single tab with a URL if it doesn't have history
-  async initializeTab(tabId, url, title = "") {
+  async initializeTab(tabId: number, url: string, title = "") {
     if (!url || url.startsWith("chrome://") || url.startsWith("edge://"))
       return;
 
@@ -886,8 +1004,8 @@ class TabHistoryTracker {
       const result = await this.storage.get(key);
       if (!result[key]) {
         // No history exists, create initial entry with url and title
-        const entry = { url, title: title || url };
-        const data = { stack: [entry], currentIndex: 0 };
+        const entry: HistoryEntry = { url, title: title || url };
+        const data: HistoryData = { stack: [entry], currentIndex: 0 };
         await this.storage.set({ [key]: data });
         console.log(
           "[HISTORY] Initialized tab",
@@ -902,7 +1020,11 @@ class TabHistoryTracker {
   }
 
   // Track when tabs finish loading - capture title
-  async onTabUpdated(tabId, changeInfo, tab) {
+  async onTabUpdated(
+    tabId: number,
+    changeInfo: chrome.tabs.TabChangeInfo,
+    tab: chrome.tabs.Tab
+  ) {
     // Don't treat load completion as a new navigation.
     // Back/forward navigations often trigger onUpdated('complete') as well; if we
     // call addToHistory() here with isBackForward=false it will clear forward
@@ -918,12 +1040,15 @@ class TabHistoryTracker {
     }
   }
 
-  async onNavigation(details) {
+  async onNavigation(
+    details: chrome.webNavigation.WebNavigationCallbackDetails
+  ) {
     if (details.frameId !== 0) return; // Only main frame
 
     const tabId = details.tabId;
     const url = details.url;
-    const qualifiers = details.transitionQualifiers || [];
+    // transitionQualifiers is optional/can be undefined depending on event type, but usually present for onCommitted
+    const qualifiers = (details as any).transitionQualifiers || [];
 
     // Check if this is a reload
     if (qualifiers.includes("reload")) {
@@ -943,11 +1068,11 @@ class TabHistoryTracker {
   }
 
   // Update the title of the current history entry
-  async updateCurrentTitle(tabId, url, title) {
+  async updateCurrentTitle(tabId: number, url: string, title: string) {
     const key = `hist_${tabId}`;
     try {
       const result = await this.storage.get(key);
-      const data = result[key];
+      const data = result[key] as HistoryData;
       if (!data || data.currentIndex < 0) return;
 
       const current = data.stack[data.currentIndex];
@@ -965,11 +1090,17 @@ class TabHistoryTracker {
   }
 
   // Helper to get URL from stack entry (handles both string and object formats)
-  getEntryUrl(entry) {
-    return typeof entry === "string" ? entry : entry?.url;
+  getEntryUrl(entry: string | HistoryEntry | undefined): string | undefined {
+    if (!entry) return undefined;
+    return typeof entry === "string" ? entry : entry.url;
   }
 
-  async addToHistory(tabId, url, title, isBackForward) {
+  async addToHistory(
+    tabId: number,
+    url: string,
+    title: string,
+    isBackForward: boolean
+  ) {
     if (
       !url ||
       url.startsWith("chrome://") ||
@@ -983,11 +1114,15 @@ class TabHistoryTracker {
 
     try {
       const result = await this.storage.get(key);
-      let data = result[key] || { stack: [], currentIndex: -1 };
-      const entry = { url, title: title || url };
+      let data = (result[key] || {
+        stack: [],
+        currentIndex: -1,
+      }) as HistoryData;
+      const entry: HistoryEntry = { url, title: title || url };
 
       // Helper to check equality
-      const isSameUrl = (e, u) => this.getEntryUrl(e) === u;
+      const isSameUrl = (e: string | HistoryEntry, u: string) =>
+        this.getEntryUrl(e) === u;
 
       // 1. Check if we are ALREADY at this URL (race condition handling)
       // If webNavigation fired first, currentIndex might already be updated.
@@ -1089,7 +1224,7 @@ class TabHistoryTracker {
     }
   }
 
-  async onTabRemoved(tabId) {
+  async onTabRemoved(tabId: number) {
     try {
       await this.storage.remove(`hist_${tabId}`);
     } catch (e) {
@@ -1097,11 +1232,11 @@ class TabHistoryTracker {
     }
   }
 
-  async getHistory(tabId) {
+  async getHistory(tabId: number) {
     try {
       const key = `hist_${tabId}`;
       const result = await this.storage.get(key);
-      const data = result[key];
+      const data = result[key] as HistoryData;
 
       console.log("[HISTORY] Getting history for tab", tabId, "data:", data);
 
@@ -1110,7 +1245,7 @@ class TabHistoryTracker {
       }
 
       // Normalize entries to always have url and title
-      const normalizeEntry = (entry) => {
+      const normalizeEntry = (entry: string | HistoryEntry) => {
         if (typeof entry === "string") {
           return { url: entry, title: entry };
         }
@@ -1143,11 +1278,11 @@ class TabHistoryTracker {
   }
 
   // Update the currentIndex by a delta amount (used when navigating via extension)
-  async updateIndexByDelta(tabId, delta) {
+  async updateIndexByDelta(tabId: number, delta: number) {
     const key = `hist_${tabId}`;
     try {
       const result = await this.storage.get(key);
-      const data = result[key];
+      const data = result[key] as HistoryData;
       if (!data || !data.stack) return false;
 
       const newIndex = data.currentIndex + delta;
@@ -1170,7 +1305,7 @@ class TabHistoryTracker {
     }
   }
 
-  async navigate(tabId, delta) {
+  async navigate(tabId: number, delta: number) {
     if (!tabId) return;
 
     // Update our internal index BEFORE navigating
@@ -1204,7 +1339,11 @@ if (
   });
 }
 
-async function handleMessage(request, sender, sendResponse) {
+async function handleMessage(
+  request: any,
+  sender: chrome.runtime.MessageSender,
+  sendResponse: (response?: any) => void
+) {
   try {
     if (!request || !request.action) {
       console.error("[ERROR] Invalid message received:", request);
@@ -1262,7 +1401,7 @@ async function handleMessage(request, sender, sendResponse) {
           items.sort((a, b) => (b.lastModified || 0) - (a.lastModified || 0));
           const limited = items.slice(0, uiMax);
           sendResponse({ success: true, items: limited });
-        } catch (error) {
+        } catch (error: any) {
           console.error("[ERROR] Failed to get recently closed:", error);
           sendResponse({ success: false, error: error.message });
         }
@@ -1276,7 +1415,7 @@ async function handleMessage(request, sender, sendResponse) {
           }
           const restored = await chrome.sessions.restore(request.sessionId);
           sendResponse({ success: true, restored });
-        } catch (error) {
+        } catch (error: any) {
           console.error("[ERROR] Failed to restore session:", error);
           sendResponse({ success: false, error: error.message });
         }
@@ -1289,7 +1428,7 @@ async function handleMessage(request, sender, sendResponse) {
         try {
           await chrome.tabs.update(request.tabId, { active: true });
           sendResponse({ success: true });
-        } catch (error) {
+        } catch (error: any) {
           console.error("[ERROR] Failed to switch to tab:", error);
           sendResponse({ success: false, error: error.message });
         }
@@ -1311,7 +1450,7 @@ async function handleMessage(request, sender, sendResponse) {
           await chrome.tabs.remove(request.tabId);
           // Cache cleanup handled by onRemoved listener
           sendResponse({ success: true });
-        } catch (error) {
+        } catch (error: any) {
           console.error("[ERROR] Failed to close tab:", error);
           sendResponse({ success: false, error: error.message });
         }
@@ -1327,7 +1466,7 @@ async function handleMessage(request, sender, sendResponse) {
           const newMutedStatus = !tab.mutedInfo.muted;
           await chrome.tabs.update(request.tabId, { muted: newMutedStatus });
           sendResponse({ success: true, muted: newMutedStatus });
-        } catch (error) {
+        } catch (error: any) {
           console.error("[ERROR] Failed to toggle mute:", error);
           sendResponse({ success: false, error: error.message });
         }
@@ -1337,7 +1476,7 @@ async function handleMessage(request, sender, sendResponse) {
         try {
           await handleShowTabSwitcher();
           sendResponse({ success: true });
-        } catch (error) {
+        } catch (error: any) {
           console.error("[ERROR] Failed to refresh tab list:", error);
           sendResponse({ success: false, error: error.message });
         }
@@ -1355,7 +1494,7 @@ async function handleMessage(request, sender, sendResponse) {
             success: !!screenshot,
             screenshot: screenshot,
           });
-        } catch (error) {
+        } catch (error: any) {
           console.error("[ERROR] Failed to capture screenshot:", error);
           sendResponse({ success: false, error: error.message });
         }
@@ -1365,7 +1504,7 @@ async function handleMessage(request, sender, sendResponse) {
         try {
           const stats = screenshotCache.getStats();
           sendResponse({ success: true, stats });
-        } catch (error) {
+        } catch (error: any) {
           console.error("[ERROR] Failed to get cache stats:", error);
           sendResponse({ success: false, error: error.message });
         }
@@ -1383,7 +1522,7 @@ async function handleMessage(request, sender, sendResponse) {
           } else {
             sendResponse({ success: false, error: "Invalid quality tier" });
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error("[ERROR] Failed to set quality tier:", error);
           sendResponse({ success: false, error: error.message });
         }
@@ -1399,7 +1538,7 @@ async function handleMessage(request, sender, sendResponse) {
           const history = await historyTracker.getHistory(tabId);
           console.log("[HISTORY] Sending history for tab", tabId, history);
           sendResponse(history);
-        } catch (error) {
+        } catch (error: any) {
           console.error("[ERROR] Failed to get tab history:", error);
           sendResponse({ back: [], forward: [] });
         }
@@ -1436,7 +1575,7 @@ async function handleMessage(request, sender, sendResponse) {
           const isBackForward = navType === "back_forward";
           await historyTracker.addToHistory(tabId, url, title, isBackForward);
           sendResponse({ success: true });
-        } catch (error) {
+        } catch (error: any) {
           console.error("[ERROR] Failed to report navigation:", error);
           sendResponse({ success: false, error: error.message });
         }
@@ -1451,8 +1590,25 @@ async function handleMessage(request, sender, sendResponse) {
           } else {
             sendResponse({ success: false, error: "Invalid tabId or delta" });
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error("[ERROR] Failed to navigate history:", error);
+          sendResponse({ success: false, error: error.message });
+        }
+        break;
+
+      case "createGroup":
+        try {
+          if (request.tabId && chrome.tabs.group) {
+            const groupId = await chrome.tabs.group({ tabIds: request.tabId });
+            sendResponse({ success: true, groupId });
+          } else {
+            sendResponse({
+              success: false,
+              error: "Missing tabId or API not supported",
+            });
+          }
+        } catch (error: any) {
+          console.error("[GROUPS] Failed to create group:", error);
           sendResponse({ success: false, error: error.message });
         }
         break;
@@ -1461,7 +1617,7 @@ async function handleMessage(request, sender, sendResponse) {
         console.warn("[WARNING] Unknown action:", request.action);
         sendResponse({ success: false, error: "Unknown action" });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[ERROR] Message handler failed:`, error);
     sendResponse({ success: false, error: error.message });
   }
@@ -1493,7 +1649,7 @@ async function initializeExistingTabs() {
 
     // Initialize open order for all existing tabs
     tabs.forEach((tab, index) => {
-      if (!tabOpenOrder.has(tab.id)) {
+      if (tab.id && !tabOpenOrder.has(tab.id)) {
         // Assign timestamps based on tab index to preserve relative order
         tabOpenOrder.set(tab.id, now - (tabs.length - index) * 1000);
       }
@@ -1506,7 +1662,7 @@ async function initializeExistingTabs() {
         windowId: win.id,
         active: true,
       });
-      if (activeTab) {
+      if (activeTab && activeTab.id) {
         // Only update if not already in recent order (to preserve restored order)
         if (recentTabOrder.indexOf(activeTab.id) === -1) {
           updateRecentTabOrder(activeTab.id);
@@ -1514,7 +1670,7 @@ async function initializeExistingTabs() {
         previousActiveTabId = activeTab.id;
         // Capture active tab screenshot after a delay
         setTimeout(() => {
-          queueCapture(activeTab.id, true);
+          if (activeTab.id) queueCapture(activeTab.id, true);
         }, 500);
       }
     }
@@ -1522,7 +1678,7 @@ async function initializeExistingTabs() {
     console.log(
       `[INIT] Initialized ${tabs.length} existing tabs, ${recentTabOrder.length} in recent order`
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("[INIT] Failed to initialize existing tabs:", error);
   }
 }
@@ -1534,8 +1690,8 @@ console.log("[INIT] Visual Tab Switcher initialized");
 // Load quality tier setting from storage (defensive to avoid TypeError)
 chrome.storage.local.get(["qualityTier"], (result) => {
   try {
-    const stored = result && result.qualityTier;
-    const tiers = PERF_CONFIG && PERF_CONFIG.QUALITY_TIERS;
+    const stored = (result && result.qualityTier) as string;
+    const tiers: Record<string, any> = PERF_CONFIG && PERF_CONFIG.QUALITY_TIERS;
     if (stored && tiers && tiers[stored]) {
       currentQualityTier = stored;
       console.log(`[INIT] Loaded quality tier: ${currentQualityTier}`);

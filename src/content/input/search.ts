@@ -1,10 +1,10 @@
-import { state } from "../state.js";
-import { switchToActive, switchToRecent, closeOverlay } from "../actions.js";
+import { state } from "../state";
+import { switchToActive, switchToRecent, closeOverlay } from "../actions";
 import {
   renderTabsStandard,
   renderTabsVirtual,
   renderHistoryView,
-} from "../ui/rendering.js";
+} from "../ui/rendering";
 
 // Create smart search handler with combined throttle + debounce
 export function createSmartSearchHandler() {

@@ -1,11 +1,20 @@
-import { state } from "./state.js";
-import * as handlers from "./input/keyboard.js";
-import * as focus from "./input/focus.js";
-import { renderTabsStandard, renderTabsVirtual } from "./ui/rendering.js";
+import { state, Tab } from "./state";
+import * as handlers from "./input/keyboard";
+import * as focus from "./input/focus";
+import {
+  renderTabsStandard,
+  renderTabsVirtual,
+  applyGroupViewTransformation,
+} from "./ui/rendering";
 
 export function closeOverlay() {
   try {
     if (!state.isOverlayVisible) return;
+
+    // If already closing, don't restart logic, but ensure we don't break
+    if (state.isClosing) return;
+
+    state.isClosing = true;
 
     // GPU-accelerated fade-out
     requestAnimationFrame(() => {
@@ -13,7 +22,12 @@ export function closeOverlay() {
         state.overlay.style.opacity = "0";
       }
 
-      setTimeout(() => {
+      if (state.closeTimeout) clearTimeout(state.closeTimeout);
+
+      state.closeTimeout = setTimeout(() => {
+        state.closeTimeout = null;
+        state.isClosing = false;
+
         if (state.overlay) {
           state.overlay.style.display = "none";
         }
@@ -92,6 +106,7 @@ export function closeOverlay() {
     console.error("[TAB SWITCHER] Error in closeOverlay:", error);
     // Force cleanup even on error
     state.isOverlayVisible = false;
+    state.isClosing = false;
     if (state.focusInterval) {
       clearInterval(state.focusInterval);
       state.focusInterval = null;
@@ -106,7 +121,7 @@ export function closeOverlay() {
   }
 }
 
-export function switchToTab(tabId) {
+export function switchToTab(tabId: number) {
   try {
     if (!tabId || typeof tabId !== "number") {
       console.error("[TAB SWITCHER] Invalid tab ID:", tabId);
@@ -122,7 +137,7 @@ export function switchToTab(tabId) {
           );
         }
       });
-    } catch (msgErr) {
+    } catch (msgErr: any) {
       console.debug(
         "[TAB SWITCHER] sendMessage warn:",
         msgErr?.message || msgErr
@@ -135,7 +150,7 @@ export function switchToTab(tabId) {
   }
 }
 
-export function restoreSession(sessionId) {
+export function restoreSession(sessionId: string) {
   try {
     if (!sessionId) return;
     try {
@@ -150,7 +165,7 @@ export function restoreSession(sessionId) {
           }
         }
       );
-    } catch (msgErr) {
+    } catch (msgErr: any) {
       console.debug(
         "[TAB SWITCHER] sendMessage warn:",
         msgErr?.message || msgErr
@@ -163,7 +178,7 @@ export function restoreSession(sessionId) {
   }
 }
 
-export function closeTab(tabId, index) {
+export function closeTab(tabId: number, index: number) {
   try {
     if (!tabId || typeof tabId !== "number") {
       console.error("[TAB SWITCHER] Invalid tab ID for closing:", tabId);
@@ -243,7 +258,7 @@ export function closeTab(tabId, index) {
   }
 }
 
-export function toggleMute(tabId, btnElement) {
+export function toggleMute(tabId: number, btnElement: HTMLElement) {
   try {
     if (!tabId) return;
 
@@ -273,7 +288,7 @@ export function toggleMute(tabId, btnElement) {
 
         const tab = state.currentTabs.find((t) => t.id === tabId);
         if (tab) {
-          if (!tab.mutedInfo) tab.mutedInfo = {};
+          if (!tab.mutedInfo) tab.mutedInfo = { muted: false };
           tab.mutedInfo.muted = isMuted;
         }
       }
@@ -283,7 +298,7 @@ export function toggleMute(tabId, btnElement) {
   }
 }
 
-export function setViewMode(mode) {
+export function setViewMode(mode: "active" | "recent") {
   state.viewMode = mode;
   if (state.domCache?.backBtn) {
     state.domCache.backBtn.style.display = mode === "recent" ? "flex" : "none";
@@ -321,11 +336,39 @@ export function setViewMode(mode) {
   }
 }
 
+export function createGroup(tabId: number) {
+  try {
+    if (!tabId || typeof tabId !== "number") return;
+
+    chrome.runtime.sendMessage({ action: "createGroup", tabId }, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error(
+          "[TAB SWITCHER] Error creating group:",
+          chrome.runtime.lastError.message
+        );
+        return;
+      }
+      if (response?.success) {
+        closeOverlay();
+      }
+    });
+  } catch (error) {
+    console.error("[TAB SWITCHER] Exception in createGroup:", error);
+  }
+}
+
 export function switchToActive() {
   if (state.viewMode === "active") return;
   setViewMode("active");
   state.currentTabs = state.activeTabs || [];
-  state.filteredTabs = state.currentTabs;
+  // IMPORTANT: For active view, we might want to re-apply grouping if it's the filtered view?
+  // Basically reset to full active list (which implies active recency sort).
+  // AND apply group transformation to show headers.
+
+  // We apply transformation here
+  const transformed = applyGroupViewTransformation(state.currentTabs);
+  state.filteredTabs = transformed;
+
   state.selectedIndex = 0;
   if (state.domCache.grid) {
     state.domCache.grid.classList.remove("recent-mode");
@@ -345,7 +388,7 @@ export function switchToActive() {
 export async function switchToRecent() {
   if (state.viewMode === "recent") return;
   setViewMode("recent");
-  let items = [];
+  let items: any[] = [];
   try {
     items = await new Promise((resolve) => {
       try {
@@ -372,7 +415,7 @@ export async function switchToRecent() {
     console.debug("[TAB SWITCHER] Failed to load recently closed:", e);
   }
   state.recentItems = items.map((it, idx) => ({
-    id: null,
+    id: undefined, // Recent items don't have tab IDs
     title: it.title,
     url: it.url,
     favIconUrl: it.favIconUrl,
@@ -381,9 +424,44 @@ export async function switchToRecent() {
     index: idx,
   }));
   state.currentTabs = state.recentItems;
-  state.filteredTabs = state.recentItems;
+  state.filteredTabs = state.recentItems; // No grouping for recent items usually
   state.selectedIndex = 0;
   if (state.domCache.grid) state.domCache.grid.classList.add("recent-mode");
   renderTabsStandard(state.filteredTabs);
   if (state.domCache.searchBox) state.domCache.searchBox.focus();
+}
+
+export function toggleGroupCollapse(groupId: number) {
+  if (!groupId) return;
+
+  if (state.collapsedGroups.has(groupId)) {
+    state.collapsedGroups.delete(groupId);
+  } else {
+    state.collapsedGroups.add(groupId);
+  }
+
+  // We need to strip existing headers first if we are re-transforming `filteredTabs`.
+  // If we are in search, we might not want to group?
+  // Let's assume we operate on state.activeTabs if we are in active mode,
+  // or just re-transform current filtered set if it makes sense.
+  // Ideally, we take the BASE active tabs and re-filter + re-transform.
+  // But strictly toggleGroupCollapse should probably just re-render Active View.
+
+  // Reuse switchToActive logic but preserve selection?
+  // Custom logic:
+
+  const rawTabs = state.currentTabs; // Assuming currentTabs is the source of truth (without headers)
+  // Wait, does state.currentTabs contain headers?
+  // switchToActive sets state.currentTabs = state.activeTabs (raw).
+  // Then sets filteredTabs = transformed.
+  // So currentTabs should be raw.
+
+  const newTabs = applyGroupViewTransformation(rawTabs);
+  state.filteredTabs = newTabs;
+
+  if (newTabs.length > 50) {
+    renderTabsVirtual(newTabs);
+  } else {
+    renderTabsStandard(newTabs);
+  }
 }
