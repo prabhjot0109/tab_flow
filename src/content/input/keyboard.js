@@ -76,7 +76,7 @@ function isHistoryModeActive() {
     typeof state.domCache.searchBox.value === "string"
       ? state.domCache.searchBox.value
       : "") || "";
-  return v.trim().startsWith("/");
+  return v.trim().startsWith(",");
 }
 
 export function handleKeyDown(e) {

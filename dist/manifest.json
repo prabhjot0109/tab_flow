@@ -22,7 +22,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/index.js-166GCdh1.js"
+        "assets/index.js-DMTZA3HJ.js"
       ],
       "matches": [
         "<all_urls>"
@@ -78,7 +78,7 @@
         "https://*/*"
       ],
       "resources": [
-        "assets/index.js-166GCdh1.js"
+        "assets/index.js-DMTZA3HJ.js"
       ],
       "use_dynamic_url": false
     }

@@ -1,6 +1,10 @@
-import { state } from '../state.js';
-import { switchToActive, switchToRecent, closeOverlay } from '../actions.js';
-import { renderTabsStandard, renderTabsVirtual, renderHistoryView } from '../ui/rendering.js';
+import { state } from "../state.js";
+import { switchToActive, switchToRecent, closeOverlay } from "../actions.js";
+import {
+  renderTabsStandard,
+  renderTabsVirtual,
+  renderHistoryView,
+} from "../ui/rendering.js";
 
 // Create smart search handler with combined throttle + debounce
 export function createSmartSearchHandler() {
@@ -46,8 +50,8 @@ export function handleSearch(e) {
         : state.domCache?.searchBox?.value ?? "";
     const query = String(rawVal).trim();
 
-    // History Mode: starts with /
-    if (query.startsWith("/")) {
+    // History Mode: starts with ,
+    if (query.startsWith(",")) {
       state.history.active = true;
       if (state.domCache.grid) {
         state.domCache.grid.classList.add("search-mode");
@@ -57,27 +61,24 @@ export function handleSearch(e) {
       // Update help text for history mode
       if (state.domCache.helpText) {
         state.domCache.helpText.innerHTML = `
-            <span><kbd>/</kbd> History Mode</span>
+            <span><kbd>,</kbd> History Mode</span>
             <span><kbd>Click</kbd> Navigate</span>
             <span><kbd>Backspace</kbd> Exit History</span>
             <span><kbd>Esc</kbd> Close</span>
           `;
       }
 
-      chrome.runtime.sendMessage(
-        { action: "GET_TAB_HISTORY" },
-        (response) => {
-          if (chrome.runtime.lastError) {
-            console.error(
-              "[TAB SWITCHER] History error:",
-              chrome.runtime.lastError
-            );
-            return;
-          }
-          console.log("[TAB SWITCHER] Received history:", response);
-          renderHistoryView(response || { back: [], forward: [] });
+      chrome.runtime.sendMessage({ action: "GET_TAB_HISTORY" }, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error(
+            "[TAB SWITCHER] History error:",
+            chrome.runtime.lastError
+          );
+          return;
         }
-      );
+        console.log("[TAB SWITCHER] Received history:", response);
+        renderHistoryView(response || { back: [], forward: [] });
+      });
       return;
     }
 
@@ -95,9 +96,7 @@ export function handleSearch(e) {
           ? `Search Web for "${searchQuery}"`
           : "Type to search web...",
         url: searchQuery
-          ? `https://www.google.com/search?q=${encodeURIComponent(
-              searchQuery
-            )}`
+          ? `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`
           : "",
         favIconUrl: "https://www.google.com/favicon.ico",
         isWebSearch: true,

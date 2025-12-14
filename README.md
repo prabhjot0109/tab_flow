@@ -43,7 +43,7 @@ Replace the default browser tab cycle with a beautiful, Mac-like "Mission Contro
 | **`Tab`** / **Arrows**         | Navigate between tabs                          |
 | **`Enter`**                    | Switch to selected tab                         |
 | **`Delete`** / **`Backspace`** | Close selected tab                             |
-| **`/`**                        | View Tab History (Back/Forward)                |
+| **`,`**                        | View Tab History (Back/Forward)                |
 | **`.`**                        | View Recently Closed Tabs                      |
 | **`?`** (Shift + /)            | Web Search                                     |
 | **`Esc`**                      | Close Switcher                                 |
