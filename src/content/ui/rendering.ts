@@ -15,8 +15,10 @@ export function renderTabsStandard(tabs: Tab[]) {
   const grid = state.domCache.grid;
   if (!grid) return;
 
-  // Clear grid
+  // Clear grid and reset virtual list mode
   grid.innerHTML = "";
+  grid.classList.remove("virtual-list");
+  grid.style.minHeight = "";
 
   if (tabs.length === 0) {
     const emptyMsg = document.createElement("div");
@@ -57,9 +59,11 @@ export function renderTabsStandard(tabs: Tab[]) {
 export function renderTabsVirtual(tabs: Tab[]) {
   const startTime = performance.now();
   const grid = state.domCache.grid;
+  if (!grid) return;
 
-  // Clear grid
+  // Clear grid and set virtual list mode
   grid.innerHTML = "";
+  grid.classList.add("virtual-list");
 
   if (tabs.length === 0) {
     const emptyMsg = document.createElement("div");
@@ -70,6 +74,7 @@ export function renderTabsVirtual(tabs: Tab[]) {
   }
 
   // Calculate visible range
+  const itemHeight = 68; // 60px height + 8px margin
   const visibleCount = state.virtualScroll.visibleCount;
   const bufferCount = state.virtualScroll.bufferCount;
   const startIndex = Math.max(0, state.selectedIndex - bufferCount);
@@ -82,10 +87,7 @@ export function renderTabsVirtual(tabs: Tab[]) {
   state.virtualScroll.endIndex = endIndex;
 
   // Create placeholder for scrolling
-  // Adjust height based on whether items are headers or cards?
-  // For simplicity, assume uniform height or close enough.
-  // TODO: Headers might be smaller, but sticking to 180px for now avoids complex offset math.
-  const totalHeight = tabs.length * 180;
+  const totalHeight = tabs.length * itemHeight;
   grid.style.minHeight = `${totalHeight}px`;
 
   // Render only visible tabs
@@ -96,8 +98,10 @@ export function renderTabsVirtual(tabs: Tab[]) {
     const tabCard = createTabCard(tab, i);
 
     // Position absolutely for virtual scrolling
-    tabCard.style.position = "relative";
-    tabCard.style.top = `${i * 180}px`;
+    tabCard.style.position = "absolute";
+    tabCard.style.top = `${i * itemHeight}px`;
+    tabCard.style.left = "0";
+    tabCard.style.right = "0";
 
     fragment.appendChild(tabCard);
   }

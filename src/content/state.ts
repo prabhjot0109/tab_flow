@@ -41,14 +41,16 @@ export interface State {
   host: HTMLElement | null;
   shadowRoot: ShadowRoot | null;
   styleElement: HTMLStyleElement | null;
+  lastFullscreenElement: HTMLElement | null; // Track fullscreen element before overlay
   domCache: {
     grid: HTMLElement | null;
     searchBox: HTMLInputElement | null;
     container: HTMLElement | null;
     searchWrap: HTMLElement | null;
     backBtn: HTMLElement | null;
-    recentBtn: HTMLElement | null;
     helpText?: HTMLElement | null;
+    sectionTitle?: HTMLElement | null;
+    tabHint?: HTMLElement | null;
   };
   virtualScroll: {
     startIndex: number;
@@ -63,12 +65,20 @@ export interface State {
   focusInterval: number | null; // Use number for window.setInterval
   closeTimeout: ReturnType<typeof setTimeout> | null;
   isClosing: boolean;
+  pageLock: {
+    bodyPointerEvents: string;
+    bodyUserSelect: string;
+    bodyInert: boolean;
+  } | null;
   history: {
     active: boolean;
     backEls: HTMLElement[];
     forwardEls: HTMLElement[];
     column: "back" | "forward";
     index: number;
+  };
+  webSearch: {
+    active: boolean;
   };
 }
 
@@ -86,6 +96,7 @@ export const state: State = {
   host: null,
   shadowRoot: null,
   styleElement: null,
+  lastFullscreenElement: null,
 
   // DOM cache
   domCache: {
@@ -94,7 +105,8 @@ export const state: State = {
     container: null,
     searchWrap: null,
     backBtn: null,
-    recentBtn: null,
+    sectionTitle: null,
+    tabHint: null,
   },
 
   // Virtual scrolling
@@ -114,6 +126,9 @@ export const state: State = {
   closeTimeout: null,
   isClosing: false,
 
+  // Page interaction lock (restores on close)
+  pageLock: null,
+
   // History view selection state
   history: {
     active: false,
@@ -121,5 +136,10 @@ export const state: State = {
     forwardEls: [],
     column: "back",
     index: 0,
+  },
+
+  // Web search mode (entered via Tab)
+  webSearch: {
+    active: false,
   },
 };

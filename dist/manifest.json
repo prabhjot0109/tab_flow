@@ -22,7 +22,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/index.ts-pzMwFBlf.js"
+        "assets/index.ts-CJUNEiCt.js"
       ],
       "matches": [
         "<all_urls>"
@@ -78,7 +78,7 @@
         "https://*/*"
       ],
       "resources": [
-        "assets/index.ts-pzMwFBlf.js"
+        "assets/index.ts-CJUNEiCt.js"
       ],
       "use_dynamic_url": false
     }

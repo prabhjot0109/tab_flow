@@ -12,18 +12,18 @@
     "isEntry": true
   },
   "src/content/index.ts": {
-    "file": "assets/index.ts-pzMwFBlf.js",
+    "file": "assets/index.ts-CJUNEiCt.js",
     "name": "index.ts",
     "src": "src/content/index.ts",
     "isEntry": true
   },
   "src/popup/popup.html": {
-    "file": "assets/popup.html-CcS0vrPS.js",
+    "file": "assets/popup.html-Pnc4tFFo.js",
     "name": "popup.html",
     "src": "src/popup/popup.html",
     "isEntry": true,
     "css": [
-      "assets/popup-BPRxv7gR.css"
+      "assets/popup-BWrSthvN.css"
     ]
   }
 }

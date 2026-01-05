@@ -1,5 +1,56 @@
 import { state } from "../state";
 
+export function lockPageInteraction() {
+  if (state.pageLock) return;
+
+  const body = document.body;
+  if (!body) return;
+
+  const inertSupported = "inert" in body;
+  state.pageLock = {
+    bodyPointerEvents: body.style.pointerEvents,
+    bodyUserSelect: body.style.userSelect,
+    bodyInert: inertSupported ? Boolean((body as any).inert) : false,
+  };
+
+  // Make the underlying page non-interactive.
+  // Important: our UI is mounted on documentElement, not inside body.
+  try {
+    if (inertSupported) {
+      (body as any).inert = true;
+    }
+  } catch {
+    // Ignore if browser blocks inert writes.
+  }
+
+  body.style.pointerEvents = "none";
+  body.style.userSelect = "none";
+}
+
+export function unlockPageInteraction() {
+  if (!state.pageLock) return;
+
+  const body = document.body;
+  if (!body) {
+    state.pageLock = null;
+    return;
+  }
+
+  const inertSupported = "inert" in body;
+  try {
+    if (inertSupported) {
+      (body as any).inert = state.pageLock.bodyInert;
+    }
+  } catch {
+    // Ignore.
+  }
+
+  body.style.pointerEvents = state.pageLock.bodyPointerEvents;
+  body.style.userSelect = state.pageLock.bodyUserSelect;
+
+  state.pageLock = null;
+}
+
 // Blur all focusable elements on the page to prevent they from receiving input
 export function blurPageElements() {
   try {

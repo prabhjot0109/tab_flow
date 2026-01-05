@@ -52,31 +52,33 @@ export function handleGridClick(e: MouseEvent) {
 
     // Handle tab card click
     const tabCard = target.closest(".tab-card") as HTMLElement;
-    if (tabCard) {
-      if (state.viewMode === "recent" || tabCard.dataset.recent === "1") {
-        const sessionId = tabCard.dataset.sessionId;
-        if (sessionId) {
-          restoreSession(sessionId);
-        }
-        return;
+    if (!tabCard) return;
+
+    if (state.viewMode === "recent" || tabCard.dataset.recent === "1") {
+      const sessionId = tabCard.dataset.sessionId;
+      if (sessionId) {
+        restoreSession(sessionId);
       }
-      if (tabCard.dataset.webSearch === "1") {
-        const query = tabCard.dataset.searchQuery;
-        if (query) {
-          window.open(
-            `https://www.google.com/search?q=${encodeURIComponent(query)}`,
-            "_blank"
-          );
-          closeOverlay();
-        }
-        return;
+      return;
+    }
+
+    if (tabCard.dataset.webSearch === "1") {
+      const query = tabCard.dataset.searchQuery;
+      if (query) {
+        window.open(
+          `https://www.google.com/search?q=${encodeURIComponent(query)}`,
+          "_blank"
+        );
+        closeOverlay();
       }
-      const tabId = parseInt(tabCard.dataset.tabId || "0");
-      if (tabId && !Number.isNaN(tabId)) {
-        switchToTab(tabId);
-      } else {
-        console.error("[TAB SWITCHER] Invalid tab ID in card:", tabCard);
-      }
+      return;
+    }
+
+    const tabId = parseInt(tabCard.dataset.tabId || "0");
+    if (tabId && !Number.isNaN(tabId)) {
+      switchToTab(tabId);
+    } else {
+      console.error("[TAB SWITCHER] Invalid tab ID in card:", tabCard);
     }
   } catch (error) {
     console.error("[TAB SWITCHER] Error in handleGridClick:", error);
@@ -95,7 +97,23 @@ function isHistoryModeActive() {
 export function handleKeyDown(e: KeyboardEvent) {
   if (!state.isOverlayVisible) return;
 
-  const isInSearchBox = e.target === state.domCache.searchBox;
+  // Escape closes the extension overlay.
+  // Note: Browsers may still exit fullscreen on Escape.
+  if (e.key === "Escape") {
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof (e as any).stopImmediatePropagation === "function") {
+      (e as any).stopImmediatePropagation();
+    }
+    closeOverlay();
+    return;
+  }
+
+  const isInSearchBox =
+    e.target === state.domCache.searchBox ||
+    (e.composedPath &&
+      state.domCache.searchBox &&
+      e.composedPath().includes(state.domCache.searchBox));
   const isInHistoryMode = isHistoryModeActive() && state.history.active;
 
   // In history mode, allow arrow keys and Enter through even from search box
@@ -108,8 +126,8 @@ export function handleKeyDown(e: KeyboardEvent) {
   ];
   const isHistoryNavKey = isInHistoryMode && historyNavKeys.includes(e.key);
 
-  // Avoid double-handling when typing in the search box; allow Escape and history nav keys through
-  if (isInSearchBox && e.key !== "Escape" && !isHistoryNavKey) {
+  // Avoid double-handling when typing in the search box; allow history nav keys through
+  if (isInSearchBox && !isHistoryNavKey) {
     return;
   }
 
@@ -125,11 +143,6 @@ export function handleKeyDown(e: KeyboardEvent) {
     // History mode keyboard navigation
     if (isInHistoryMode) {
       switch (e.key) {
-        case "Escape":
-          e.preventDefault();
-          closeOverlay();
-          return;
-
         case "Enter":
           e.preventDefault();
           activateSelectedHistoryItem();
@@ -199,11 +212,6 @@ export function handleKeyDown(e: KeyboardEvent) {
     }
 
     switch (e.key) {
-      case "Escape":
-        e.preventDefault();
-        closeOverlay();
-        break;
-
       case "Enter":
         e.preventDefault();
         if (
@@ -213,9 +221,16 @@ export function handleKeyDown(e: KeyboardEvent) {
         ) {
           const selectedTab = state.filteredTabs[state.selectedIndex];
           if (selectedTab) {
-            // Group Header handling removed
-
-            if (state.viewMode === "recent" && selectedTab.sessionId) {
+            if (selectedTab.isWebSearch) {
+              const q = (selectedTab.searchQuery || "").trim();
+              if (q) {
+                window.open(
+                  `https://www.google.com/search?q=${encodeURIComponent(q)}`,
+                  "_blank"
+                );
+                closeOverlay();
+              }
+            } else if (state.viewMode === "recent" && selectedTab.sessionId) {
               restoreSession(selectedTab.sessionId);
             } else if (selectedTab.id) {
               switchToTab(selectedTab.id);
@@ -226,10 +241,36 @@ export function handleKeyDown(e: KeyboardEvent) {
 
       case "Tab":
         e.preventDefault();
-        if (e.shiftKey) {
-          selectPrevious();
+        // Tab key: web search (no '?' prefix)
+        if (state.domCache?.searchBox) {
+          const val = state.domCache.searchBox.value.trim();
+          if (e.shiftKey) {
+            selectPrevious();
+          } else if (state.viewMode === "recent") {
+            selectNext();
+          } else if (val.length === 0) {
+            // Empty: toggle web search mode on/off
+            state.webSearch.active = !state.webSearch.active;
+            state.domCache.searchBox.dispatchEvent(
+              new Event("input", { bubbles: true })
+            );
+            state.domCache.searchBox.focus();
+          } else if (!val.startsWith(",")) {
+            // Has text (normal mode): search Google directly
+            window.open(
+              `https://www.google.com/search?q=${encodeURIComponent(val)}`,
+              "_blank"
+            );
+            closeOverlay();
+          } else {
+            selectNext();
+          }
         } else {
-          selectNext();
+          if (e.shiftKey) {
+            selectPrevious();
+          } else {
+            selectNext();
+          }
         }
         break;
 
@@ -245,12 +286,12 @@ export function handleKeyDown(e: KeyboardEvent) {
 
       case "ArrowDown":
         e.preventDefault();
-        selectDown();
+        selectNext();
         break;
 
       case "ArrowUp":
         e.preventDefault();
-        selectUp();
+        selectPrevious();
         break;
 
       case "Delete":
@@ -332,6 +373,7 @@ export function handleSearchKeydown(e: KeyboardEvent) {
       }
       state.lastKeyTime = now;
     }
+
     // '.' toggles between Active and Recently Closed when input empty
     if (e.key === ".") {
       const val = (e.target as HTMLInputElement).value || "";
@@ -345,9 +387,20 @@ export function handleSearchKeydown(e: KeyboardEvent) {
         return;
       }
     }
+
     // Backspace: if empty in recent mode, go back to active
     if (e.key === "Backspace") {
       const val = (e.target as HTMLInputElement).value || "";
+      if (val.length === 0 && state.webSearch.active) {
+        e.preventDefault();
+        state.webSearch.active = false;
+        if (state.domCache?.searchBox) {
+          state.domCache.searchBox.dispatchEvent(
+            new Event("input", { bubbles: true })
+          );
+        }
+        return;
+      }
       if (val.length === 0 && state.viewMode === "recent") {
         e.preventDefault();
         switchToActive();
@@ -372,41 +425,61 @@ export function handleSearchKeydown(e: KeyboardEvent) {
       return;
     }
 
-    // Tab key: Navigate down (Shift+Tab goes backward/up)
+    // Tab key: Google search functionality
     if (e.key === "Tab") {
       e.preventDefault();
+      const val = (e.target as HTMLInputElement).value || "";
+      const trimmedVal = val.trim();
+
       if (e.shiftKey) {
-        // Shift+Tab: Move to previous (up)
+        // Shift+Tab: navigate backward
         selectPrevious();
+      } else if (state.viewMode === "recent") {
+        selectNext();
+      } else if (trimmedVal.length === 0) {
+        // Empty search: toggle web search mode on/off
+        state.webSearch.active = !state.webSearch.active;
+        if (state.domCache?.searchBox) {
+          state.domCache.searchBox.dispatchEvent(
+            new Event("input", { bubbles: true })
+          );
+        }
+      } else if (!trimmedVal.startsWith(",")) {
+        // Has text and not in history mode: search Google directly
+        window.open(
+          `https://www.google.com/search?q=${encodeURIComponent(trimmedVal)}`,
+          "_blank"
+        );
+        closeOverlay();
       } else {
-        // Tab: Move to next (down)
+        // Already in special mode: just navigate
         selectNext();
       }
       return;
     }
 
-    // Arrow Down: Move to next row (down)
+    // Arrow Down: Move to next item
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      selectDown();
+      selectNext();
       return;
     }
 
-    // Arrow Up: Move to previous row (up)
+    // Arrow Up: Move to previous item
     if (e.key === "ArrowUp") {
       e.preventDefault();
-      selectUp();
+      selectPrevious();
       return;
     }
 
-    // Arrow Right: Move to right in grid
+    // Arrow Right: Move to next item
     if (e.key === "ArrowRight") {
       e.preventDefault();
       selectRight();
       return;
     }
 
-    // Arrow Left: Move to left in grid
+    // Arrow Left: Move to previous item
     if (e.key === "ArrowLeft") {
       e.preventDefault();
       selectLeft();
@@ -423,8 +496,6 @@ export function handleSearchKeydown(e: KeyboardEvent) {
       ) {
         const selectedTab = state.filteredTabs[state.selectedIndex];
 
-        // Group Header handling removed
-
         if (state.viewMode === "recent" && selectedTab?.sessionId) {
           restoreSession(selectedTab.sessionId);
         } else if (selectedTab?.isWebSearch) {
@@ -436,7 +507,6 @@ export function handleSearchKeydown(e: KeyboardEvent) {
           );
           closeOverlay();
         } else if (selectedTab?.id && selectedTab.id >= 0) {
-          // Ensure positive ID
           switchToTab(selectedTab.id);
         }
       }
@@ -465,15 +535,6 @@ export function selectPrevious() {
     state.selectedIndex = state.filteredTabs.length - 1;
   }
   updateSelection();
-}
-
-// All arrow keys use simple linear navigation
-function selectDown() {
-  selectNext();
-}
-
-function selectUp() {
-  selectPrevious();
 }
 
 function selectRight() {

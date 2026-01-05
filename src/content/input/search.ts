@@ -166,12 +166,27 @@ export function handleSearch(e) {
         : state.domCache?.searchBox?.value ?? "";
     const query = String(rawVal).trim();
 
+    // Update tab hint visibility - show only when search is empty in active mode
+    if (state.domCache?.tabHint) {
+      const shouldHideHint =
+        query.length > 0 ||
+        state.viewMode === "recent" ||
+        state.webSearch.active;
+      state.domCache.tabHint.classList.toggle("hidden", shouldHideHint);
+    }
+
     // History Mode: starts with ,
     if (query.startsWith(",")) {
+      state.webSearch.active = false;
       state.history.active = true;
       if (state.domCache.grid) {
         state.domCache.grid.classList.add("search-mode");
         state.domCache.grid.classList.remove("recent-mode");
+      }
+
+      // Update section title for history mode
+      if (state.domCache.sectionTitle) {
+        state.domCache.sectionTitle.textContent = "Tab History";
       }
 
       // Update help text for history mode
@@ -199,11 +214,10 @@ export function handleSearch(e) {
     state.history.backEls = [];
     state.history.forwardEls = [];
 
-    // Web Search Mode: starts with ?
-    if (query.startsWith("?")) {
-      const searchQuery = query.substring(1).trim();
+    // Web Search Mode: entered via Tab (no '?' prefix)
+    if (state.viewMode !== "recent" && state.webSearch.active) {
+      const searchQuery = query;
       const webSearchTab = {
-        id: "web-search",
         title: searchQuery
           ? `Search Web for "${searchQuery}"`
           : "Type to search web...",
@@ -221,13 +235,23 @@ export function handleSearch(e) {
         state.domCache.grid.classList.add("search-mode");
         state.domCache.grid.classList.remove("recent-mode");
       }
+      // Update section title for web search mode
+      if (state.domCache.sectionTitle) {
+        state.domCache.sectionTitle.textContent = "Web Search";
+      }
       renderTabsStandard(state.filteredTabs);
       return;
     }
 
-    // Remove search-mode class when not in web search
+    // Remove search-mode class when not in web search/history
     if (state.domCache.grid) {
       state.domCache.grid.classList.remove("search-mode");
+    }
+
+    // Reset section title to default based on view mode
+    if (state.domCache.sectionTitle) {
+      state.domCache.sectionTitle.textContent =
+        state.viewMode === "recent" ? "Recently Closed" : "Opened Tabs";
     }
 
     // '.' quick toggle

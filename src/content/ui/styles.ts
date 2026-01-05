@@ -21,64 +21,64 @@ export const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
   /* Ensure host doesn't affect page layout */
   display: contents !important;
   
-  /* CSS Custom Properties - Material 3 Dark Theme (Lighter) */
-  --bg-overlay: rgba(76, 76, 80, 0.8);
-  --bg-surface: #202020;
-  --bg-glass: #282830;
-  --bg-glass-hover: #32323c;
-  --border-subtle: #3a3a45;
-  --border-hover: #4a4a58;
-  --border-active: #5a5a6a;
-  --text-primary: #f4f4f8;
-  --text-secondary: #c0c0cc;
-  --text-muted: #888899;
-  --accent: #e8e8f0;
-  --accent-light: #d0d0dc;
-  --accent-glow: rgba(255, 255, 255, 0.12);
-  --card-bg: #262630;
-  --card-hover: #30303c;
-  --card-selected: #383848;
-  --danger: #ffb4ab;
-  --success: #a8dab5;
+  /* CSS Custom Properties - Monochrome Theme (White/Grey/Black) */
+  --bg-overlay: rgba(0, 0, 0, 0.6);
+  --bg-surface: #1c1c1c;
+  --bg-glass: #2a2a2a;
+  --bg-glass-hover: #333333;
+  --border-subtle: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(255, 255, 255, 0.15);
+  --border-active: rgba(255, 255, 255, 0.25);
+  --text-primary: #ffffff;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666666;
+  --accent: #ffffff;
+  --accent-light: #e0e0e0;
+  --accent-glow: rgba(255, 255, 255, 0.1);
+  --card-bg: #252525;
+  --card-hover: #2f2f2f;
+  --card-selected: #3a3a3a;
+  --danger: #ff6b6b;
+  --success: #59d499;
   
-  /* Material 3 Shape - Extra Rounded */
-  --radius-3xl: 32px;
-  --radius-2xl: 28px;
-  --radius-xl: 24px;
-  --radius-lg: 20px;
-  --radius-md: 16px;
-  --radius-sm: 12px;
-  --radius-xs: 8px;
+  /* Raycast-style Shape - Subtle Rounded */
+  --radius-3xl: 12px;
+  --radius-2xl: 10px;
+  --radius-xl: 8px;
+  --radius-lg: 8px;
+  --radius-md: 6px;
+  --radius-sm: 5px;
+  --radius-xs: 4px;
   --radius-full: 9999px;
   
-  --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06);
   --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.25);
-  --font-family: "Google Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
   --transition-fast: 0.1s ease;
-  --transition-smooth: 0.2s cubic-bezier(0.2, 0, 0, 1);
+  --transition-smooth: 0.15s cubic-bezier(0.2, 0, 0, 1);
 }
 
 @media (prefers-color-scheme: light) {
   :host {
-    /* Material 3 Light Theme - Clean & Bright */
-    --bg-overlay: rgba(100, 100, 110, 0.45);
-    --bg-surface: #fafafc;
-    --bg-glass: #f2f2f6;
-    --bg-glass-hover: #e8e8ee;
-    --border-subtle: #d8d8e0;
-    --border-hover: #c8c8d2;
-    --border-active: #b0b0bc;
-    --text-primary: #1a1a22;
-    --text-secondary: #4a4a58;
-    --text-muted: #7a7a8a;
-    --accent: #202030;
-    --accent-light: #404055;
-    --accent-glow: rgba(0, 0, 0, 0.06);
-    --card-bg: #f0f0f6;
-    --card-hover: #e6e6ee;
-    --card-selected: #dcdce6;
-    --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.1);
-    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
+    /* Monochrome Light Theme */
+    --bg-overlay: rgba(0, 0, 0, 0.25);
+    --bg-surface: #ffffff;
+    --bg-glass: #f5f5f5;
+    --bg-glass-hover: #ebebeb;
+    --border-subtle: rgba(0, 0, 0, 0.1);
+    --border-hover: rgba(0, 0, 0, 0.15);
+    --border-active: rgba(0, 0, 0, 0.25);
+    --text-primary: #000000;
+    --text-secondary: #666666;
+    --text-muted: #999999;
+    --accent: #000000;
+    --accent-light: #333333;
+    --accent-glow: rgba(0, 0, 0, 0.08);
+    --card-bg: #f8f8f8;
+    --card-hover: #f0f0f0;
+    --card-selected: #e5e5e5;
+    --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.06);
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
   }
 }
 
@@ -88,9 +88,9 @@ export const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
   inset: 0;
   z-index: 2147483647;
   display: none;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  padding-top: 6vh;
+  padding: 20px;
   font-family: var(--font-family);
   font-size: 14px;
   line-height: 1.5;
@@ -99,40 +99,44 @@ export const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
   -moz-osx-font-smoothing: grayscale;
   /* Enable pointer events on the overlay when visible */
   pointer-events: auto;
+  /* Prevent scroll chaining to the host page */
+  overscroll-behavior: contain;
 }
 
 .tab-switcher-backdrop {
   position: absolute;
   inset: 0;
   background: var(--bg-overlay);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  animation: backdropFadeIn 0.25s cubic-bezier(0.2, 0, 0, 1);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  animation: backdropFadeIn 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
 
 .tab-switcher-container {
   position: relative;
-  width: 900px;
+  width: 750px;
   max-width: 94vw;
-  max-height: 80vh;
+  max-height: 75vh;
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-3xl);
   box-shadow: var(--shadow-xl);
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: 0;
   overflow: hidden;
-  animation: containerSlideIn 0.25s cubic-bezier(0.2, 0, 0, 1);
+  animation: containerSlideIn 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
 
-/* Search Header */
+/* Search Header - Raycast-style Navigation Bar */
 .tab-switcher-search-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 0;
+  padding: 0;
   flex-shrink: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  background: transparent;
 }
 
 .tab-switcher-search-wrap {
@@ -144,22 +148,23 @@ export const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
 
 .tab-switcher-search {
   width: 100%;
-  background: var(--bg-glass);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
-  padding: 16px 20px 16px 54px;
-  font-size: 15px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 22px 24px 22px 56px;
+  font-size: 17px;
   font-weight: 400;
   color: var(--text-primary);
   outline: none;
-  transition: all var(--transition-smooth);
+  transition: none;
   letter-spacing: -0.01em;
+  caret-color: var(--accent);
 }
 
 .tab-switcher-search:focus {
-  background: var(--bg-glass-hover);
-  border-color: var(--accent);
-  box-shadow: 0 0 0 4px var(--accent-glow), var(--shadow-card);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 .tab-switcher-search::placeholder {
@@ -174,80 +179,202 @@ export const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
   pointer-events: none;
   display: flex;
   align-items: center;
-  transition: all var(--transition-fast);
+  transition: color var(--transition-fast);
 }
 
 .tab-switcher-search:focus ~ .search-icon,
 .tab-switcher-search-wrap:focus-within .search-icon {
-  color: var(--accent);
-  transform: scale(1.05);
+  color: var(--text-muted);
+  transform: none;
+}
+
+/* Tab hint on right side of search bar */
+.search-tab-hint {
+  position: absolute;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 12px;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity var(--transition-fast);
+}
+
+.search-tab-hint kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  color: var(--text-secondary);
+}
+
+.search-tab-hint.hidden {
+  opacity: 0;
+}
+
+/* Section Header with View Toggle */
+.tab-switcher-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 16px;
+  flex-shrink: 0;
+}
+
+.tab-switcher-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.tab-switcher-view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-glass);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+}
+
+.view-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.view-toggle-btn:hover {
+  color: var(--text-secondary);
+  background: var(--bg-glass-hover);
+}
+
+.view-toggle-btn.active {
+  background: var(--bg-glass-hover);
+  color: var(--text-primary);
+}
+
+.view-toggle-btn svg {
+  width: 14px;
+  height: 14px;
 }
 
 /* Buttons */
-.recently-closed-btn {
-  background: var(--bg-glass);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-secondary);
-  padding: 0 24px;
-  border-radius: var(--radius-xl);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all var(--transition-smooth);
-  white-space: nowrap;
-  height: 54px;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  letter-spacing: -0.01em;
-}
-
-.recently-closed-btn:hover {
-  background: var(--bg-glass-hover);
-  border-color: var(--border-hover);
-  color: var(--text-primary);
-  transform: translateY(-1px);
-}
-
-.recently-closed-btn:active {
-  transform: translateY(0);
-}
-
 .recent-back-btn {
   position: absolute;
-  left: 10px;
+  left: 8px;
   z-index: 10;
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
-  background: var(--bg-glass-hover);
-  color: var(--text-primary);
+  background: transparent;
+  color: var(--text-secondary);
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 18px;
-  transition: all var(--transition-smooth);
+  font-size: 16px;
+  transition: all var(--transition-fast);
 }
 
 .recent-back-btn:hover {
-  background: var(--accent);
-  color: white;
-  transform: scale(1.08);
+  background: var(--bg-glass-hover);
+  color: var(--text-primary);
+  transform: none;
 }
 
 /* Grid - Active Tabs */
 .tab-switcher-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 14px;
+  gap: 10px;
   overflow-y: auto;
   overflow-x: hidden;
   /* Extra vertical padding to allow space for the "selection lift/scale" without cropping */
-  padding: 16px 14px;
-  min-height: 200px;
+  padding: 12px 12px;
+  min-height: 180px;
   scroll-behavior: smooth;
+  overscroll-behavior: contain;
+}
+
+/* List View Mode */
+.tab-switcher-grid.list-view {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tab-switcher-grid.list-view .tab-card {
+  width: 100%;
+  height: auto;
+  min-height: 52px;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 14px;
+  gap: 12px;
+}
+
+.tab-switcher-grid.list-view .tab-card:hover {
+  transform: none;
+}
+
+.tab-switcher-grid.list-view .tab-card.selected {
+  transform: none !important;
+}
+
+.tab-switcher-grid.list-view .tab-thumbnail {
+  flex: 0 0 36px;
+  height: 36px;
+  width: 36px;
+  min-height: 36px;
+  border-radius: var(--radius-sm);
+}
+
+.tab-switcher-grid.list-view .tab-info {
+  flex: 1;
+  padding: 0;
+  min-width: 0;
+}
+
+.tab-switcher-grid.list-view .tab-title {
+  font-size: 14px;
+}
+
+.tab-switcher-grid.list-view .tab-url {
+  padding-left: 0;
+  font-size: 12px;
+}
+
+.tab-switcher-grid.list-view .tab-close-btn {
+  position: relative;
+  top: auto;
+  right: auto;
+  opacity: 0;
+  width: 24px;
+  height: 24px;
+}
+
+.tab-switcher-grid.list-view .tab-card:hover .tab-close-btn {
+  opacity: 1;
 }
 
 /* Recent Mode & Search Mode - Column Layout */
@@ -323,32 +450,32 @@ export const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
 .tab-card {
   background: var(--card-bg);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   cursor: pointer;
   position: relative;
   display: flex;
   flex-direction: column;
-  height: 170px;
-  transition: all var(--transition-smooth);
-  box-shadow: var(--shadow-card);
+  height: 160px;
+  transition: all var(--transition-fast);
+  box-shadow: none;
 }
 
 .tab-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   border-color: var(--border-hover);
   background: var(--card-hover);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .tab-card.selected {
   border-color: var(--accent) !important;
   border-width: 2px !important;
   background: var(--card-selected) !important;
-  /* More prominent glow and depth */
-  box-shadow: 0 0 0 3px var(--accent-glow), 0 12px 32px rgba(0, 0, 0, 0.35) !important;
-  /* Slight lift and scale to stand out spatially */
-  transform: translateY(-6px) scale(1.03) !important;
+  /* Raycast-style subtle glow */
+  box-shadow: 0 0 0 2px var(--accent-glow), 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  /* Slight lift */
+  transform: translateY(-3px) !important;
   z-index: 50 !important;
 }
 
@@ -356,11 +483,11 @@ export const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
   content: '';
   position: absolute;
   inset: 0;
-  /* Subtle inner glow to distinguish from background */
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 100%);
+  /* Subtle inner highlight */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
   pointer-events: none;
   z-index: 0;
-  animation: selection-pulse 2s infinite alternate ease-in-out;
+  animation: none;
 }
 
 @keyframes selection-pulse {
@@ -665,42 +792,55 @@ export const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
   background: rgba(0, 0, 0, 0.8);
 }
 
-/* Footer/Help */
+/* Footer/Help - Raycast-style Action Bar */
 .tab-switcher-help {
   display: flex;
-  gap: 24px;
-  margin-top: 24px;
-  padding-top: 20px;
+  align-items: center;
+  gap: 0;
+  margin-top: 0;
+  padding: 10px 16px;
   border-top: 1px solid var(--border-subtle);
   color: var(--text-muted);
   font-size: 12px;
   justify-content: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   flex-shrink: 0;
+  background: var(--bg-surface);
+  min-height: 40px;
 }
 
 .tab-switcher-help span {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
+  padding: 0 12px;
+  white-space: nowrap;
+  border-right: 1px solid var(--border-subtle);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.tab-switcher-help span:last-child {
+  border-right: none;
 }
 
 kbd {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 8px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
   background: var(--bg-glass);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xs);
-  font-family: "SF Mono", "Fira Code", monospace;
+  border-radius: 4px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
   font-size: 11px;
   font-weight: 500;
   color: var(--text-secondary);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all var(--transition-smooth);
+  box-shadow: none;
+  transition: none;
+  margin-right: 3px;
 }
 
 kbd:hover {
@@ -717,14 +857,14 @@ kbd:hover {
   }
   to { 
     opacity: 1;
-    backdrop-filter: blur(24px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(150%);
   }
 }
 
 @keyframes containerSlideIn {
   from { 
     opacity: 0;
-    transform: translateY(-20px) scale(0.96);
+    transform: translateY(-8px) scale(0.98);
   }
   to { 
     opacity: 1;
@@ -735,7 +875,7 @@ kbd:hover {
 @keyframes cardFadeIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
@@ -747,25 +887,27 @@ kbd:hover {
 .tab-switcher-grid.recent-mode .tab-card {
   width: 100%;
   height: auto;
-  min-height: 60px;
+  min-height: 52px;
   flex-direction: row;
   align-items: center;
-  padding: 14px 18px;
-  gap: 16px;
+  padding: 10px 14px;
+  gap: 12px;
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   box-shadow: none;
 }
 
 .tab-switcher-grid.recent-mode .tab-card:hover {
   transform: none;
   border-color: var(--border-hover);
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 
 .tab-switcher-grid.recent-mode .tab-card.selected {
   border-color: var(--accent);
   background: var(--card-selected);
+  transform: none !important;
+  box-shadow: 0 0 0 2px var(--accent-glow) !important;
 }
 
 .tab-switcher-grid.recent-mode .tab-thumbnail {
@@ -820,25 +962,27 @@ kbd:hover {
 .tab-switcher-grid.search-mode .tab-card {
   width: 100%;
   height: auto;
-  min-height: 60px;
+  min-height: 52px;
   flex-direction: row;
   align-items: center;
-  padding: 14px 18px;
-  gap: 16px;
+  padding: 10px 14px;
+  gap: 12px;
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   box-shadow: none;
 }
 
 .tab-switcher-grid.search-mode .tab-card:hover {
   transform: none;
   border-color: var(--border-hover);
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 
 .tab-switcher-grid.search-mode .tab-card.selected {
   border-color: var(--accent);
   background: var(--card-selected);
+  transform: none !important;
+  box-shadow: 0 0 0 2px var(--accent-glow) !important;
 }
 
 .tab-switcher-grid.search-mode .tab-thumbnail {
@@ -869,23 +1013,36 @@ kbd:hover {
 /* Responsive */
 @media (max-width: 768px) {
   .tab-switcher-container {
-    padding: 16px;
+    padding: 0;
     max-width: 98vw;
     max-height: 90vh;
   }
   
   .tab-switcher-grid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 10px;
+    gap: 8px;
+    padding: 10px;
   }
   
   .tab-card {
-    height: 150px;
+    height: 140px;
   }
   
   .tab-switcher-help {
-    gap: 12px;
-    font-size: 11px;
+    gap: 0;
+    font-size: 10px;
+    padding: 6px 10px;
+  }
+  
+  .tab-switcher-help span {
+    padding: 0 6px;
+  }
+  
+  kbd {
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    font-size: 9px;
   }
   
   .recently-closed-btn {

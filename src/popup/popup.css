@@ -49,6 +49,8 @@ body {
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   text-align: center;
+  outline: 1px solid var(--border);
+  outline-offset: -1px;
 }
 
 .header {

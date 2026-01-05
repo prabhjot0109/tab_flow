@@ -16,6 +16,9 @@ export function closeOverlay() {
 
     state.isClosing = true;
 
+    // Immediately restore page interaction, even while we fade out.
+    focus.unlockPageInteraction();
+
     // GPU-accelerated fade-out
     requestAnimationFrame(() => {
       if (state.overlay) {
@@ -40,8 +43,9 @@ export function closeOverlay() {
         }
 
         // Cleanup
-        document.removeEventListener("keydown", handlers.handleKeyDown);
-        document.removeEventListener("keyup", handlers.handleKeyUp);
+        state.lastFullscreenElement = null;
+        document.removeEventListener("keydown", handlers.handleKeyDown, true);
+        document.removeEventListener("keyup", handlers.handleKeyUp, true);
 
         // Remove focus enforcement listeners
         document.removeEventListener("focus", focus.handleGlobalFocus, true);
@@ -107,14 +111,15 @@ export function closeOverlay() {
     // Force cleanup even on error
     state.isOverlayVisible = false;
     state.isClosing = false;
+    focus.unlockPageInteraction();
     if (state.focusInterval) {
       clearInterval(state.focusInterval);
       state.focusInterval = null;
     }
     // Try to remove listeners anyway
     try {
-      document.removeEventListener("keydown", handlers.handleKeyDown);
-      document.removeEventListener("keyup", handlers.handleKeyUp);
+      document.removeEventListener("keydown", handlers.handleKeyDown, true);
+      document.removeEventListener("keyup", handlers.handleKeyUp, true);
       document.removeEventListener("focus", focus.handleGlobalFocus, true);
       // ... assume others are removed or acceptable leak in error state
     } catch {}
@@ -314,22 +319,32 @@ export function setViewMode(mode: "active" | "recent") {
         : "Search tabs by title or URL...";
   }
 
+  // Update section title based on mode
+  if (state.domCache?.sectionTitle) {
+    state.domCache.sectionTitle.textContent =
+      mode === "recent" ? "Recently Closed" : "Opened Tabs";
+  }
+
+  // Update tab hint visibility
+  if (state.domCache?.tabHint) {
+    state.domCache.tabHint.classList.toggle("hidden", mode === "recent");
+  }
+
   if (state.domCache?.helpText) {
     if (mode === "recent") {
       state.domCache.helpText.innerHTML = `
-        <span><kbd>Alt+Q</kbd> Navigate</span>
+        <span><kbd>Alt+Q</kbd> <kbd>↑↓</kbd> Navigate</span>
         <span><kbd>Enter</kbd> Restore</span>
         <span><kbd>Backspace</kbd> Active Tabs</span>
         <span><kbd>Esc</kbd> Exit</span>
       `;
     } else {
       state.domCache.helpText.innerHTML = `
-        <span><kbd>Alt+Q</kbd> Navigate</span>
+        <span><kbd>Alt+Q</kbd> <kbd>↑↓</kbd> Navigate</span>
         <span><kbd>Enter</kbd> Switch</span>
         <span><kbd>Delete</kbd> Close</span>
         <span><kbd>.</kbd> Recent Tabs</span>
         <span><kbd>,</kbd> History</span>
-        <span><kbd>?</kbd> Web Search</span>
         <span><kbd>Esc</kbd> Exit</span>
       `;
     }
