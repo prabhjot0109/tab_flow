@@ -104,6 +104,12 @@ export function closeOverlay() {
           state.intersectionObserver.disconnect();
           state.intersectionObserver = null;
         }
+
+        // Clean up resize observer
+        if (state.resizeObserver) {
+          state.resizeObserver.disconnect();
+          state.resizeObserver = null;
+        }
       }, 200); // Match CSS transition
     });
   } catch (error) {

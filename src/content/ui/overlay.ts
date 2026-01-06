@@ -21,6 +21,37 @@ import {
 } from "./rendering";
 import * as focus from "../input/focus";
 
+// ============================================================================
+// GLOBAL VIEW MODE (persisted via chrome.storage.local, applies across all sites)
+// ============================================================================
+let cachedViewMode: "grid" | "list" = "grid";
+
+// Load view mode from chrome.storage on script initialization
+try {
+  chrome.storage.local.get(["tabSwitcherViewMode"], (result) => {
+    if (!chrome.runtime.lastError && result.tabSwitcherViewMode) {
+      cachedViewMode = result.tabSwitcherViewMode;
+    }
+  });
+} catch {
+  // Ignore - use default
+}
+
+/** Get the current cached view mode (synchronous) */
+function getCachedViewMode(): "grid" | "list" {
+  return cachedViewMode;
+}
+
+/** Set the global view mode and persist to chrome.storage */
+function setGlobalViewMode(mode: "grid" | "list") {
+  cachedViewMode = mode;
+  try {
+    chrome.storage.local.set({ tabSwitcherViewMode: mode });
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 function installShadowEventGuards(shadowRoot: ShadowRoot) {
   const marker = "__tabSwitcherEventGuardsInstalled";
   if ((shadowRoot as any)[marker]) return;
@@ -230,13 +261,13 @@ export function createOverlay() {
   const viewToggle = document.createElement("div");
   viewToggle.className = "tab-switcher-view-toggle";
 
-  // Get saved view preference
-  const savedView = localStorage.getItem("tabSwitcherViewMode") || "grid";
+  // Use globally cached view mode (loaded from chrome.storage at extension init)
+  const currentView = getCachedViewMode();
 
   const gridViewBtn = document.createElement("button");
   gridViewBtn.type = "button";
   gridViewBtn.className = `view-toggle-btn ${
-    savedView === "grid" ? "active" : ""
+    currentView === "grid" ? "active" : ""
   }`;
   gridViewBtn.dataset.view = "grid";
   gridViewBtn.title = "Grid View";
@@ -250,7 +281,7 @@ export function createOverlay() {
   const listViewBtn = document.createElement("button");
   listViewBtn.type = "button";
   listViewBtn.className = `view-toggle-btn ${
-    savedView === "list" ? "active" : ""
+    currentView === "list" ? "active" : ""
   }`;
   listViewBtn.dataset.view = "list";
   listViewBtn.title = "List View";
@@ -270,7 +301,7 @@ export function createOverlay() {
   // Grid container with virtual scrolling support
   const grid = document.createElement("div");
   grid.className = `tab-switcher-grid ${
-    savedView === "list" ? "list-view" : ""
+    currentView === "list" ? "list-view" : ""
   }`;
   grid.id = "tab-switcher-grid";
   grid.setAttribute("role", "listbox");
@@ -309,7 +340,7 @@ export function createOverlay() {
     ) as HTMLButtonElement;
     if (!btn) return;
 
-    const view = btn.dataset.view;
+    const view = btn.dataset.view as "grid" | "list";
     if (!view) return;
 
     // Update button states
@@ -319,8 +350,8 @@ export function createOverlay() {
     // Update grid class
     grid.classList.toggle("list-view", view === "list");
 
-    // Save preference
-    localStorage.setItem("tabSwitcherViewMode", view);
+    // Save preference globally via chrome.storage (persists across all sites)
+    setGlobalViewMode(view);
   });
 
   // Cache DOM references

@@ -10,7 +10,8 @@
     "storage",
     "scripting",
     "sessions",
-    "favicon"
+    "favicon",
+    "alarms"
   ],
   "host_permissions": ["<all_urls>"],
   "background": {

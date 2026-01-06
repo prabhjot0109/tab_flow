@@ -3,6 +3,7 @@ import { state } from "./state";
 import { showTabSwitcher } from "./ui/overlay";
 import { selectNext } from "./input/keyboard";
 import { enforceSingleSelection } from "./ui/rendering";
+import { closeOverlay } from "./actions";
 
 console.log("═══════════════════════════════════════════════════════");
 console.log("Visual Tab Switcher - Content Script Loaded");
@@ -65,7 +66,7 @@ if (document.readyState === "complete") {
 }
 
 // Also check when elements are added
-const mediaObserver = new MutationObserver((mutations) => {
+export const mediaObserver = new MutationObserver((mutations) => {
   for (const mutation of mutations) {
     if (mutation.addedNodes.length) {
       detectMedia();
@@ -79,6 +80,33 @@ try {
 } catch (e) {
   // Ignore if body not ready
 }
+
+// ============================================================================
+// AUTO-CLOSE ON PAGE VISIBILITY CHANGE
+// If the user switches tabs, navigates away, or reopens a site where the
+// extension was left open, close the overlay so it starts fresh next time.
+// ============================================================================
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && state.isOverlayVisible) {
+    // Page became hidden (user switched tabs or navigated away)
+    // Close the overlay immediately so it resets on next open
+    closeOverlay();
+  }
+});
+
+// Also close on page unload/navigation to ensure clean state
+window.addEventListener("beforeunload", () => {
+  if (state.isOverlayVisible) {
+    closeOverlay();
+  }
+});
+
+// Close on popstate (browser back/forward navigation)
+window.addEventListener("popstate", () => {
+  if (state.isOverlayVisible) {
+    closeOverlay();
+  }
+});
 
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
   if (request.action === "showTabSwitcher") {

@@ -122,12 +122,22 @@ function getTitleFromUrl(url: string): string {
   }
 }
 
-// Create smart search handler with combined throttle + debounce
+// Polyfill for requestIdleCallback
+const requestIdle =
+  typeof requestIdleCallback !== "undefined"
+    ? requestIdleCallback
+    : (cb: () => void) => setTimeout(cb, 1);
+
+const cancelIdle =
+  typeof cancelIdleCallback !== "undefined" ? cancelIdleCallback : clearTimeout;
+
+// Create smart search handler with combined throttle + debounce + requestIdleCallback
 export function createSmartSearchHandler() {
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let idleHandle: number | ReturnType<typeof setTimeout> | null = null;
   let lastSearchTime = 0;
   const THROTTLE_MS = 100; // Immediate feedback for small tab sets
-  const DEBOUNCE_MS = 300; // Wait for user to finish typing on large sets
+  const DEBOUNCE_MS = 250; // Wait for user to finish typing on large sets
   const LARGE_TAB_THRESHOLD = 50;
 
   return (e: Event) => {
@@ -135,9 +145,14 @@ export function createSmartSearchHandler() {
     const timeSinceLastSearch = now - lastSearchTime;
     const isLargeTabSet = state.currentTabs.length >= LARGE_TAB_THRESHOLD;
 
-    // Clear any pending debounce
+    // Clear any pending operations
     if (debounceTimer) {
       clearTimeout(debounceTimer);
+      debounceTimer = null;
+    }
+    if (idleHandle) {
+      cancelIdle(idleHandle as number);
+      idleHandle = null;
     }
 
     // For small tab sets: throttle only (immediate feedback)
@@ -145,12 +160,20 @@ export function createSmartSearchHandler() {
       lastSearchTime = now;
       handleSearch(e);
     }
-    // For large tab sets: debounce (wait for user to finish typing)
+    // For large tab sets: debounce + requestIdleCallback for better responsiveness
     else {
       debounceTimer = setTimeout(
         () => {
-          lastSearchTime = performance.now();
-          handleSearch(e);
+          // Use requestIdleCallback for large sets to avoid blocking UI
+          if (isLargeTabSet) {
+            idleHandle = requestIdle(() => {
+              lastSearchTime = performance.now();
+              handleSearch(e);
+            });
+          } else {
+            lastSearchTime = performance.now();
+            handleSearch(e);
+          }
         },
         isLargeTabSet ? DEBOUNCE_MS : THROTTLE_MS
       );

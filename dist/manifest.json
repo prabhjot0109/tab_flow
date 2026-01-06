@@ -10,7 +10,8 @@
     "storage",
     "scripting",
     "sessions",
-    "favicon"
+    "favicon",
+    "alarms"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -22,7 +23,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/index.ts-CRE4RUJB.js"
+        "assets/index.ts-loader-4HjOyQ0d.js"
       ],
       "matches": [
         "<all_urls>"
@@ -78,7 +79,7 @@
         "https://*/*"
       ],
       "resources": [
-        "assets/index.ts-CRE4RUJB.js"
+        "assets/index.ts-DqIqvUpL.js"
       ],
       "use_dynamic_url": false
     }
