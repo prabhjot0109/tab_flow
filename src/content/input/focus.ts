@@ -60,15 +60,19 @@ export function blurPageElements() {
       document.activeElement !== document.body &&
       document.activeElement !== state.host
     ) {
-      document.activeElement.blur();
+      const active = document.activeElement;
+      if (active instanceof HTMLElement) {
+        active.blur();
+      }
     }
 
     // Also try to blur any iframes' active elements
     const iframes = document.querySelectorAll("iframe");
     iframes.forEach((iframe) => {
       try {
-        if (iframe.contentDocument?.activeElement) {
-          iframe.contentDocument.activeElement.blur();
+        const iframeActive = iframe.contentDocument?.activeElement;
+        if (iframeActive instanceof HTMLElement) {
+          iframeActive.blur();
         }
       } catch {
         // Cross-origin iframe, can't access
@@ -80,7 +84,7 @@ export function blurPageElements() {
 }
 
 // Check if an event target is inside our shadow DOM
-export function isEventFromOurExtension(e) {
+export function isEventFromOurExtension(e: Event) {
   // Check if the target is our shadow host
   if (e.target === state.host) return true;
 
@@ -91,7 +95,7 @@ export function isEventFromOurExtension(e) {
   );
 }
 
-export function handleGlobalFocus(e) {
+export function handleGlobalFocus(e: FocusEvent) {
   if (!state.isOverlayVisible) return;
 
   // If focus moves to something other than our host (shadow host), force it back.
@@ -101,7 +105,7 @@ export function handleGlobalFocus(e) {
     e.preventDefault();
 
     // Blur the element that tried to steal focus
-    if (e.target && typeof e.target.blur === "function") {
+    if (e.target instanceof HTMLElement) {
       e.target.blur();
     }
 
@@ -111,7 +115,7 @@ export function handleGlobalFocus(e) {
   }
 }
 
-export function handleGlobalKeydown(e) {
+export function handleGlobalKeydown(e: KeyboardEvent) {
   if (!state.isOverlayVisible) return;
 
   // Always block events that don't originate from our extension
@@ -148,7 +152,7 @@ export function handleGlobalKeydown(e) {
 }
 
 // Block input/beforeinput/textInput events that target page elements
-export function handleGlobalInput(e) {
+export function handleGlobalInput(e: Event) {
   if (!state.isOverlayVisible) return;
 
   if (!isEventFromOurExtension(e)) {
@@ -157,7 +161,12 @@ export function handleGlobalInput(e) {
     e.preventDefault();
 
     // For beforeinput events, we may need to insert the data into our search box
-    if (e.type === "beforeinput" && e.data && state.domCache?.searchBox) {
+    if (
+      e instanceof InputEvent &&
+      e.type === "beforeinput" &&
+      typeof e.data === "string" &&
+      state.domCache?.searchBox
+    ) {
       const searchBox = state.domCache.searchBox;
       searchBox.focus();
       const start = searchBox.selectionStart || 0;
@@ -173,7 +182,7 @@ export function handleGlobalInput(e) {
 }
 
 // Block composition events (for IME input)
-export function handleGlobalComposition(e) {
+export function handleGlobalComposition(e: CompositionEvent) {
   if (!state.isOverlayVisible) return;
 
   if (!isEventFromOurExtension(e)) {
@@ -184,7 +193,7 @@ export function handleGlobalComposition(e) {
 }
 
 // Block focus attempts on page elements
-export function handleGlobalFocusIn(e) {
+export function handleGlobalFocusIn(e: FocusEvent) {
   if (!state.isOverlayVisible) return;
 
   if (!isEventFromOurExtension(e)) {
@@ -193,7 +202,7 @@ export function handleGlobalFocusIn(e) {
     e.preventDefault();
 
     // Blur the element that received focus
-    if (e.target && typeof e.target.blur === "function") {
+    if (e.target instanceof HTMLElement) {
       e.target.blur();
     }
 
@@ -204,7 +213,7 @@ export function handleGlobalFocusIn(e) {
 }
 
 // Block click events on page elements when overlay is visible
-export function handleGlobalClick(e) {
+export function handleGlobalClick(e: MouseEvent) {
   if (!state.isOverlayVisible) return;
 
   if (!isEventFromOurExtension(e)) {

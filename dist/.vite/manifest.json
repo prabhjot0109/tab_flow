@@ -6,24 +6,24 @@
     "isEntry": true
   },
   "src/background/index.ts": {
-    "file": "assets/index.ts-DOZgI6xw.js",
+    "file": "assets/index.ts-Bgib9s2n.js",
     "name": "index.ts",
     "src": "src/background/index.ts",
     "isEntry": true
   },
   "src/content/index.ts": {
-    "file": "assets/index.ts-iS5H637O.js",
+    "file": "assets/index.ts-CRE4RUJB.js",
     "name": "index.ts",
     "src": "src/content/index.ts",
     "isEntry": true
   },
   "src/popup/popup.html": {
-    "file": "assets/popup.html-Pnc4tFFo.js",
+    "file": "assets/popup.html-DSzcti_U.js",
     "name": "popup.html",
     "src": "src/popup/popup.html",
     "isEntry": true,
     "css": [
-      "assets/popup-BWrSthvN.css"
+      "assets/popup-z9s7xm7Q.css"
     ]
   }
 }

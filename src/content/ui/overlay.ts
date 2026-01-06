@@ -198,14 +198,6 @@ export function createOverlay() {
   searchBox.placeholder = "Search tabs by title or URL...";
   searchBox.autocomplete = "off";
 
-  // Back button (shown only in recent mode)
-  const backBtn = document.createElement("button");
-  backBtn.type = "button";
-  backBtn.className = "recent-back-btn";
-  backBtn.title = "Back to Active Tabs";
-  backBtn.textContent = "←";
-  backBtn.addEventListener("click", () => switchToActive());
-
   // Logo icon instead of search icon (Tab Switcher logo)
   const searchIcon = document.createElement("div");
   searchIcon.className = "search-icon";
@@ -221,7 +213,6 @@ export function createOverlay() {
   tabHint.className = "search-tab-hint";
   tabHint.innerHTML = `<kbd>Tab</kbd> Search Google`;
 
-  searchWrap.appendChild(backBtn);
   searchWrap.appendChild(searchIcon);
   searchWrap.appendChild(searchBox);
   searchWrap.appendChild(tabHint);
@@ -295,7 +286,7 @@ export function createOverlay() {
      <span><kbd>↵</kbd>Switch</span>
      <span><kbd>Del</kbd>Close</span>
      <span><kbd>.</kbd>Recent</span>
-     <span><kbd>,</kbd>History</span>
+     <span><kbd>;</kbd>History</span>
      <span><kbd>Esc</kbd>Exit</span>
    `;
   container.appendChild(helpText);
@@ -339,7 +330,6 @@ export function createOverlay() {
     searchBox,
     container,
     searchWrap,
-    backBtn,
     helpText,
     sectionTitle,
     tabHint,

@@ -3,6 +3,7 @@ import {
   closeOverlay,
   switchToTab,
   toggleMute,
+  togglePlayPause,
   restoreSession,
   closeTab,
   switchToActive,
@@ -50,6 +51,21 @@ export function handleGridClick(e: MouseEvent) {
       return;
     }
 
+    // Handle play button
+    if (
+      target.dataset.action === "play-pause" ||
+      target.closest(".tab-play-btn")
+    ) {
+      e.stopPropagation();
+      const btn = target.closest(".tab-play-btn") as HTMLElement;
+      const tabId = parseInt(btn.dataset.tabId || "0");
+
+      if (tabId && !Number.isNaN(tabId)) {
+        togglePlayPause(tabId, btn);
+      }
+      return;
+    }
+
     // Handle tab card click
     const tabCard = target.closest(".tab-card") as HTMLElement;
     if (!tabCard) return;
@@ -91,7 +107,7 @@ function isHistoryModeActive() {
     typeof state.domCache.searchBox.value === "string"
       ? state.domCache.searchBox.value
       : "") || "";
-  return v.trim().startsWith(",");
+  return v.trim().startsWith(";");
 }
 
 export function handleKeyDown(e: KeyboardEvent) {
@@ -255,7 +271,7 @@ export function handleKeyDown(e: KeyboardEvent) {
               new Event("input", { bubbles: true })
             );
             state.domCache.searchBox.focus();
-          } else if (!val.startsWith(",")) {
+          } else if (!val.startsWith(";")) {
             // Has text (normal mode): search Google directly
             window.open(
               `https://www.google.com/search?q=${encodeURIComponent(val)}`,
@@ -444,7 +460,7 @@ export function handleSearchKeydown(e: KeyboardEvent) {
             new Event("input", { bubbles: true })
           );
         }
-      } else if (!trimmedVal.startsWith(",")) {
+      } else if (!trimmedVal.startsWith(";")) {
         // Has text and not in history mode: search Google directly
         window.open(
           `https://www.google.com/search?q=${encodeURIComponent(trimmedVal)}`,

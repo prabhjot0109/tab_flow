@@ -9,6 +9,8 @@ export interface Tab {
   pinned?: boolean;
   active?: boolean;
   audible?: boolean;
+  hasMedia?: boolean;
+  isPlaying?: boolean;
   mutedInfo?: chrome.tabs.MutedInfo;
   groupId?: number;
   isWebSearch?: boolean;
@@ -18,6 +20,9 @@ export interface Tab {
   isGroupHeader?: boolean;
   groupColor?: string;
   groupTitle?: string;
+  // Temporary render props
+  _groupColor?: string;
+  _groupTitle?: string;
 }
 
 export interface Group {
@@ -47,7 +52,6 @@ export interface State {
     searchBox: HTMLInputElement | null;
     container: HTMLElement | null;
     searchWrap: HTMLElement | null;
-    backBtn: HTMLElement | null;
     helpText?: HTMLElement | null;
     sectionTitle?: HTMLElement | null;
     tabHint?: HTMLElement | null;
@@ -104,7 +108,6 @@ export const state: State = {
     searchBox: null,
     container: null,
     searchWrap: null,
-    backBtn: null,
     sectionTitle: null,
     tabHint: null,
   },

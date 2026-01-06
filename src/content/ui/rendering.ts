@@ -3,6 +3,7 @@ import {
   closeOverlay,
   switchToTab,
   toggleMute,
+  togglePlayPause,
   restoreSession,
   closeTab,
 } from "../actions";
@@ -143,15 +144,19 @@ export function createTabCard(tab: Tab, index: number) {
     "aria-selected",
     index === state.selectedIndex ? "true" : "false"
   );
-  tabCard.setAttribute("aria-label", `${tab.title} - ${tab.url}`);
+
+  const tabTitle = tab.title ?? "Untitled";
+  const tabUrl = tab.url ?? "";
+  tabCard.setAttribute("aria-label", `${tabTitle} - ${tabUrl}`);
   tabCard.tabIndex = -1; // Managed focus
   tabCard.style.transform = "translate3d(0, 0, 0)"; // GPU acceleration
 
   // Determine if we should show screenshot or favicon
-  const hasValidScreenshot =
-    tab.screenshot &&
-    typeof tab.screenshot === "string" &&
-    tab.screenshot.length > 0;
+  const screenshot =
+    typeof tab.screenshot === "string" && tab.screenshot.length > 0
+      ? tab.screenshot
+      : null;
+  const hasValidScreenshot = Boolean(screenshot);
 
   // Add classes
   if (hasValidScreenshot) {
@@ -191,45 +196,21 @@ export function createTabCard(tab: Tab, index: number) {
   const thumbnail = document.createElement("div");
   thumbnail.className = "tab-thumbnail";
 
-  // Audio/Mute Button
-  if (!tab.sessionId && !tab.isWebSearch) {
-    const muteBtn = document.createElement("button");
-    muteBtn.className = "tab-mute-btn";
-    muteBtn.title = tab.mutedInfo?.muted ? "Unmute tab" : "Mute tab";
-    muteBtn.dataset.action = "mute";
-    muteBtn.dataset.tabId = String(tab.id);
-
-    if (tab.mutedInfo?.muted) {
-      muteBtn.classList.add("muted");
-      muteBtn.innerHTML =
-        '<svg viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>';
-    } else {
-      muteBtn.innerHTML =
-        '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
-      // Only show persistently if audible
-      if (tab.audible) {
-        muteBtn.style.opacity = "0.9";
-      }
-    }
-
-    thumbnail.appendChild(muteBtn);
-  }
-
   if (tab.sessionId) {
     // Recent item: always show favicon tile (compact row)
     tabCard.classList.add("recent-item");
     const faviconTile = createFaviconTile(tab);
     thumbnail.appendChild(faviconTile);
-  } else if (hasValidScreenshot) {
+  } else if (screenshot) {
     // Show screenshot only if it's valid
     const img = document.createElement("img");
     img.className = "screenshot-img";
-    img.dataset.src = tab.screenshot; // Lazy loading
-    img.alt = tab.title;
+    img.dataset.src = screenshot; // Lazy loading
+    img.alt = tabTitle;
 
     // Load immediately if in viewport, otherwise lazy load
     if (Math.abs(index - state.selectedIndex) < 10) {
-      img.src = tab.screenshot;
+      img.src = screenshot;
     }
 
     thumbnail.appendChild(img);
@@ -277,17 +258,17 @@ export function createTabCard(tab: Tab, index: number) {
 
   const title = document.createElement("div");
   title.className = "tab-title";
-  title.textContent = tab.title;
-  title.title = tab.title;
+  title.textContent = tabTitle;
+  title.title = tabTitle;
   header.appendChild(title);
 
   // Secondary group indicator: small pill in the header
-  const gColor = (tab as any)._groupColor;
-  const gTitle = (tab as any)._groupTitle;
+  const gColor = tab._groupColor;
+  const gTitle = tab._groupTitle;
   if (gColor) {
     const pill = document.createElement("span");
     pill.className = "group-pill";
-    pill.textContent = gTitle;
+    pill.textContent = gTitle || "";
     pill.style.backgroundColor = gColor;
     pill.style.opacity = "0.4"; // Slightly more opaque
     pill.style.color = "white"; // White text for better contrast on colors
@@ -307,12 +288,78 @@ export function createTabCard(tab: Tab, index: number) {
   if (hasValidScreenshot) {
     const url = document.createElement("div");
     url.className = "tab-url";
-    url.textContent = tab.url;
-    url.title = tab.url;
+    url.textContent = tabUrl;
+    url.title = tabUrl;
     info.appendChild(url);
   }
 
   tabCard.appendChild(info);
+
+  // Audio/Mute/Play Buttons - Moved to card level for list view compatibility
+  if (!tab.sessionId && !tab.isWebSearch) {
+    // Determine media state - more comprehensive check
+    const hasMediaElements = tab.hasMedia || false;
+    const isAudible = tab.audible || false;
+    const isMuted = tab.mutedInfo?.muted || false;
+    const showMediaControls = hasMediaElements || isAudible || isMuted;
+
+    // Add classes to tabCard for CSS styling
+    if (hasMediaElements) tabCard.classList.add("has-media");
+    if (isAudible) tabCard.classList.add("is-audible");
+    if (isMuted) tabCard.classList.add("is-muted");
+
+    const mediaControls = document.createElement("div");
+    mediaControls.className = "tab-media-controls";
+
+    // Play/Pause Button - show if tab has media or is audible
+    const playBtn = document.createElement("button");
+    playBtn.className = "tab-play-btn";
+    playBtn.dataset.action = "play-pause";
+    playBtn.dataset.tabId = String(tab.id);
+
+    if (showMediaControls) {
+      if (isAudible) {
+        playBtn.classList.add("playing");
+        playBtn.title = "Pause tab";
+        playBtn.innerHTML =
+          '<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+      } else {
+        playBtn.title = "Play tab";
+        playBtn.innerHTML =
+          '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+      }
+      // Make visible since we have media
+      playBtn.classList.add("visible");
+    } else {
+      // Hide if no media detected
+      playBtn.style.display = "none";
+    }
+
+    // Mute Button - show if tab has media, is audible, or is muted
+    const muteBtn = document.createElement("button");
+    muteBtn.className = "tab-mute-btn";
+    muteBtn.title = isMuted ? "Unmute tab" : "Mute tab";
+    muteBtn.dataset.action = "mute";
+    muteBtn.dataset.tabId = String(tab.id);
+
+    if (isMuted) {
+      muteBtn.classList.add("muted");
+      muteBtn.classList.add("visible");
+      muteBtn.innerHTML =
+        '<svg viewBox="0 0 24 24"><path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>';
+    } else {
+      muteBtn.innerHTML =
+        '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
+      // Show persistently if tab has media or is audible
+      if (showMediaControls) {
+        muteBtn.classList.add("visible");
+      }
+    }
+
+    mediaControls.appendChild(playBtn);
+    mediaControls.appendChild(muteBtn);
+    tabCard.appendChild(mediaControls);
+  }
 
   // Close button (only for active tabs view and not web search)
   if (!tab.sessionId && !tab.isWebSearch) {
@@ -379,7 +426,7 @@ export function applyGroupViewTransformation(tabs: Tab[]): Tab[] {
   return tabs;
 }
 
-export function enforceSingleSelection(scrollIntoView) {
+export function enforceSingleSelection(scrollIntoView: boolean) {
   try {
     const grid = state.domCache.grid;
     if (!grid) return;
@@ -440,15 +487,17 @@ export function setupIntersectionObserver() {
     state.intersectionObserver.disconnect();
   }
 
-  state.intersectionObserver = new IntersectionObserver(
+  const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const img = entry.target;
-          if (img.dataset.src && !img.src) {
-            img.src = img.dataset.src;
-            state.intersectionObserver.unobserve(img);
-          }
+        if (!entry.isIntersecting) return;
+
+        const img = entry.target;
+        if (!(img instanceof HTMLImageElement)) return;
+
+        if (img.dataset.src && !img.src) {
+          img.src = img.dataset.src;
+          observer.unobserve(img);
         }
       });
     },
@@ -457,15 +506,21 @@ export function setupIntersectionObserver() {
     }
   );
 
+  state.intersectionObserver = observer;
+
   // Observe all lazy-load images
-  const images = state.domCache.grid.querySelectorAll("img[data-src]");
-  images.forEach((img) => {
-    state.intersectionObserver.observe(img);
-  });
+  const grid = state.domCache.grid;
+  if (!grid) return;
+
+  const images = grid.querySelectorAll("img[data-src]");
+  images.forEach((img) => observer.observe(img));
 }
 
 // History Views
-export function renderHistoryView(historyData) {
+export function renderHistoryView(historyData: {
+  back: Array<{ url: string; title: string }>;
+  forward: Array<{ url: string; title: string }>;
+}) {
   const grid = state.domCache.grid;
   if (!grid) return;
 
@@ -562,7 +617,10 @@ export function renderHistoryView(historyData) {
   updateHistorySelection();
 }
 
-export function createHistoryItem(entry, delta) {
+export function createHistoryItem(
+  entry: string | { url: string; title?: string },
+  delta: number
+) {
   // Handle both string (legacy) and object (new) formats
   const url = typeof entry === "string" ? entry : entry.url;
   const title = typeof entry === "string" ? entry : entry.title || entry.url;
@@ -570,7 +628,7 @@ export function createHistoryItem(entry, delta) {
   const item = document.createElement("div");
   item.className = "history-item";
   item.tabIndex = 0;
-  item.dataset.delta = delta;
+  item.dataset.delta = String(delta);
 
   item.onclick = () => {
     // Use browser's native history API directly for reliable navigation

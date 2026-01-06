@@ -22,7 +22,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/index.ts-iS5H637O.js"
+        "assets/index.ts-CRE4RUJB.js"
       ],
       "matches": [
         "<all_urls>"
@@ -78,7 +78,7 @@
         "https://*/*"
       ],
       "resources": [
-        "assets/index.ts-iS5H637O.js"
+        "assets/index.ts-CRE4RUJB.js"
       ],
       "use_dynamic_url": false
     }

@@ -303,15 +303,52 @@ export function toggleMute(tabId: number, btnElement: HTMLElement) {
   }
 }
 
+export function togglePlayPause(tabId: number, btnElement: HTMLElement) {
+  try {
+    if (!tabId) return;
+
+    chrome.runtime.sendMessage(
+      { action: "togglePlayPause", tabId },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          console.error(
+            "[TAB SWITCHER] Error toggling play/pause:",
+            chrome.runtime.lastError
+          );
+          return;
+        }
+
+        if (response && response.success) {
+          const isPlaying = response.playing;
+
+          if (isPlaying) {
+            btnElement.classList.add("playing");
+            btnElement.title = "Pause tab";
+            btnElement.innerHTML =
+              '<svg viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+          } else {
+            btnElement.classList.remove("playing");
+            btnElement.title = "Play tab";
+            btnElement.innerHTML =
+              '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+          }
+
+          const tab = state.currentTabs.find((t) => t.id === tabId);
+          if (tab) {
+            (tab as any).isPlaying = isPlaying;
+            // Also update audible status if we have it
+            tab.audible = isPlaying;
+          }
+        }
+      }
+    );
+  } catch (error) {
+    console.error("[TAB SWITCHER] Exception in togglePlayPause:", error);
+  }
+}
+
 export function setViewMode(mode: "active" | "recent") {
   state.viewMode = mode;
-  if (state.domCache?.backBtn) {
-    state.domCache.backBtn.style.display = mode === "recent" ? "flex" : "none";
-  }
-  if (state.domCache?.recentBtn) {
-    state.domCache.recentBtn.style.display =
-      mode === "recent" ? "none" : "inline-flex";
-  }
   if (state.domCache?.searchBox) {
     state.domCache.searchBox.placeholder =
       mode === "recent"
@@ -341,10 +378,10 @@ export function setViewMode(mode: "active" | "recent") {
     } else {
       state.domCache.helpText.innerHTML = `
         <span><kbd>Alt+Q</kbd> <kbd>↑↓</kbd> Navigate</span>
-        <span><kbd>Enter</kbd> Switch</span>
+        <span><kbd>Enter</kbd> Switch Tab</span>
         <span><kbd>Delete</kbd> Close</span>
         <span><kbd>.</kbd> Recent Tabs</span>
-        <span><kbd>,</kbd> History</span>
+        <span><kbd>;</kbd> Tab History</span>
         <span><kbd>Esc</kbd> Exit</span>
       `;
     }

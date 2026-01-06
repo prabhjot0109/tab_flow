@@ -1,9 +1,9 @@
 /* Material 3 - Lighter Dark Theme */
 :root {
   --bg: #202020;
-  --surface: #242429;
-  --surface-container: #2d2d33;
-  --card: #35353d;
+  --surface: #202020;
+  --surface-container: #202025;
+  --card: #2a2a30;
   --text: #f4f4f8;
   --text-secondary: #c9c9d0;
   --muted: #9999a5;
@@ -88,7 +88,7 @@ h1 {
   border: 1px solid var(--border-glow);
   padding: 8px 16px;
   border-radius: var(--radius-md);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   color: var(--text);
 }
 
@@ -109,6 +109,7 @@ h1 {
   border-radius: var(--radius-xl);
   padding: 16px;
   border: 1px solid var(--border);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
 }
 
 .key-list {

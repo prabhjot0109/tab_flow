@@ -22,9 +22,9 @@ export const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
   display: contents !important;
   
   /* CSS Custom Properties - Monochrome Theme (White/Grey/Black) */
-  --bg-overlay: rgba(0, 0, 0, 0.6);
-  --bg-surface: #1c1c1c;
-  --bg-glass: #2a2a2a;
+  --bg-overlay: rgba(0, 0, 0, 0.3);
+  --bg-surface: #181818;
+  --bg-glass: #303030;
   --bg-glass-hover: #333333;
   --border-subtle: rgba(255, 255, 255, 0.1);
   --border-hover: rgba(255, 255, 255, 0.15);
@@ -35,7 +35,7 @@ export const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
   --accent: #ffffff;
   --accent-light: #e0e0e0;
   --accent-glow: rgba(255, 255, 255, 0.1);
-  --card-bg: #252525;
+  --card-bg: #282828;
   --card-hover: #2f2f2f;
   --card-selected: #3a3a3a;
   --danger: #ff6b6b;
@@ -51,8 +51,8 @@ export const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
   --radius-xs: 4px;
   --radius-full: 9999px;
   
-  --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06);
-  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-xl: 0 40px 100px -12px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.35);
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
   --transition-fast: 0.1s ease;
   --transition-smooth: 0.15s cubic-bezier(0.2, 0, 0, 1);
@@ -107,8 +107,8 @@ export const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
   position: absolute;
   inset: 0;
   background: var(--bg-overlay);
-  backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
   animation: backdropFadeIn 0.2s cubic-bezier(0.2, 0, 0, 1);
 }
 
@@ -371,9 +371,39 @@ export const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
   opacity: 0;
   width: 24px;
   height: 24px;
+  flex-shrink: 0;
 }
 
 .tab-switcher-grid.list-view .tab-card:hover .tab-close-btn {
+  opacity: 1;
+}
+
+.tab-switcher-grid.list-view .tab-media-controls {
+  position: relative;
+  bottom: auto;
+  right: auto;
+  opacity: 1;
+  display: flex;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.tab-switcher-grid.list-view .tab-play-btn,
+.tab-switcher-grid.list-view .tab-mute-btn {
+  opacity: 0.6;
+}
+
+.tab-switcher-grid.list-view .tab-card:hover .tab-play-btn,
+.tab-switcher-grid.list-view .tab-card:hover .tab-mute-btn,
+.tab-switcher-grid.list-view .tab-play-btn.playing,
+.tab-switcher-grid.list-view .tab-play-btn.visible,
+.tab-switcher-grid.list-view .tab-mute-btn.muted,
+.tab-switcher-grid.list-view .tab-mute-btn.visible,
+.tab-switcher-grid.list-view .tab-card.has-media .tab-play-btn,
+.tab-switcher-grid.list-view .tab-card.has-media .tab-mute-btn,
+.tab-switcher-grid.list-view .tab-card.is-audible .tab-play-btn,
+.tab-switcher-grid.list-view .tab-card.is-audible .tab-mute-btn,
+.tab-switcher-grid.list-view .tab-card.is-muted .tab-mute-btn {
   opacity: 1;
 }
 
@@ -384,6 +414,39 @@ export const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
   flex-direction: column;
   gap: 10px;
   min-height: auto;
+}
+
+.tab-switcher-grid.recent-mode .tab-media-controls,
+.tab-switcher-grid.search-mode .tab-media-controls {
+  position: relative;
+  bottom: auto;
+  right: auto;
+  opacity: 1;
+  display: flex;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.tab-switcher-grid.recent-mode .tab-play-btn,
+.tab-switcher-grid.recent-mode .tab-mute-btn,
+.tab-switcher-grid.search-mode .tab-play-btn,
+.tab-switcher-grid.search-mode .tab-mute-btn {
+  opacity: 0.6;
+}
+
+.tab-switcher-grid.recent-mode .tab-card:hover .tab-play-btn,
+.tab-switcher-grid.recent-mode .tab-card:hover .tab-mute-btn,
+.tab-switcher-grid.search-mode .tab-card:hover .tab-play-btn,
+.tab-switcher-grid.search-mode .tab-card:hover .tab-mute-btn,
+.tab-switcher-grid.recent-mode .tab-card.has-media .tab-play-btn,
+.tab-switcher-grid.recent-mode .tab-card.has-media .tab-mute-btn,
+.tab-switcher-grid.search-mode .tab-card.has-media .tab-play-btn,
+.tab-switcher-grid.search-mode .tab-card.has-media .tab-mute-btn,
+.tab-switcher-grid.recent-mode .tab-card.is-audible .tab-play-btn,
+.tab-switcher-grid.recent-mode .tab-card.is-audible .tab-mute-btn,
+.tab-switcher-grid.search-mode .tab-card.is-audible .tab-play-btn,
+.tab-switcher-grid.search-mode .tab-card.is-audible .tab-mute-btn {
+  opacity: 1;
 }
 
 .tab-switcher-grid::-webkit-scrollbar {
@@ -747,11 +810,23 @@ export const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
   transform: scale(0.95);
 }
 
-/* Mute Button */
-.tab-mute-btn {
+.tab-mute-btn.muted {
+  color: #ff5252;
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* Media Controls Container */
+.tab-media-controls {
   position: absolute;
-  bottom: 8px;
-  right: 8px;
+  bottom: 58px; /* Positioned above the info section in grid view */
+  right: 12px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+/* Play/Pause Button */
+.tab-play-btn {
   width: 24px;
   height: 24px;
   border-radius: 50%;
@@ -761,7 +836,6 @@ export const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
   align-items: center;
   justify-content: center;
   color: white;
-  z-index: 10;
   opacity: 0;
   border: none;
   cursor: pointer;
@@ -769,9 +843,68 @@ export const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
   box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-.tab-card:hover .tab-mute-btn,
-.tab-mute-btn.muted {
+/* Show play button on hover, or when playing, or when marked visible */
+.tab-card:hover .tab-play-btn,
+.tab-play-btn.playing,
+.tab-play-btn.visible {
   opacity: 0.9;
+}
+
+/* Persistent visibility for tabs with media */
+.tab-card.has-media .tab-play-btn,
+.tab-card.is-audible .tab-play-btn {
+  opacity: 0.85;
+}
+
+.tab-play-btn:hover {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  transform: scale(1.1);
+  opacity: 1;
+}
+
+.tab-play-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.tab-play-btn.playing {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.tab-mute-btn {
+  position: relative;
+  bottom: auto;
+  right: auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  opacity: 0;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Show mute button on hover, or when muted, or when marked visible */
+.tab-card:hover .tab-mute-btn,
+.tab-mute-btn.muted,
+.tab-mute-btn.visible {
+  opacity: 0.9;
+}
+
+/* Persistent visibility for tabs with media/audio */
+.tab-card.has-media .tab-mute-btn,
+.tab-card.is-audible .tab-mute-btn,
+.tab-card.is-muted .tab-mute-btn {
+  opacity: 0.85;
 }
 
 .tab-mute-btn:hover {
@@ -785,11 +918,6 @@ export const SHADOW_CSS = `/* Visual Tab Switcher - Modern Glass UI 2.0 */
   width: 14px;
   height: 14px;
   fill: currentColor;
-}
-
-.tab-mute-btn.muted {
-  color: #ff5252;
-  background: rgba(0, 0, 0, 0.8);
 }
 
 /* Footer/Help - Raycast-style Action Bar */

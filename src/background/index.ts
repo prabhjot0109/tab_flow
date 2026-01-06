@@ -14,7 +14,7 @@ class SimpleIDB {
   private dbName: string;
   private storeName: string;
   private db: IDBDatabase | null;
-  private initPromise: Promise<IDBDatabase | void>;
+  private initPromise: Promise<IDBDatabase>;
 
   constructor(dbName: string, storeName: string) {
     this.dbName = dbName;
@@ -40,10 +40,11 @@ class SimpleIDB {
     });
   }
 
-  async getAll() {
+  async getAll(): Promise<unknown[]> {
     await this.initPromise;
-    return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction([this.storeName], "readonly");
+    if (!this.db) throw new Error("DB not initialized");
+    return new Promise<unknown[]>((resolve, reject) => {
+      const transaction = this.db!.transaction([this.storeName], "readonly");
       const store = transaction.objectStore(this.storeName);
       const request = store.getAll();
       request.onsuccess = () => resolve(request.result);
@@ -53,12 +54,9 @@ class SimpleIDB {
 
   async getAllKeys(): Promise<IDBValidKey[]> {
     await this.initPromise;
+    if (!this.db) throw new Error("DB not initialized");
     return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error("DB not initialized"));
-        return;
-      }
-      const transaction = this.db.transaction([this.storeName], "readonly");
+      const transaction = this.db!.transaction([this.storeName], "readonly");
       const store = transaction.objectStore(this.storeName);
       const request = store.getAllKeys();
       request.onsuccess = () => resolve(request.result);
@@ -66,14 +64,11 @@ class SimpleIDB {
     });
   }
 
-  async set(key: IDBValidKey, value: any): Promise<void> {
+  async set(key: IDBValidKey, value: unknown): Promise<void> {
     await this.initPromise;
+    if (!this.db) throw new Error("DB not initialized");
     return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error("DB not initialized"));
-        return;
-      }
-      const transaction = this.db.transaction([this.storeName], "readwrite");
+      const transaction = this.db!.transaction([this.storeName], "readwrite");
       const store = transaction.objectStore(this.storeName);
       const request = store.put(value, key);
       request.onsuccess = () => resolve();
@@ -83,12 +78,9 @@ class SimpleIDB {
 
   async delete(key: IDBValidKey): Promise<void> {
     await this.initPromise;
+    if (!this.db) throw new Error("DB not initialized");
     return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error("DB not initialized"));
-        return;
-      }
-      const transaction = this.db.transaction([this.storeName], "readwrite");
+      const transaction = this.db!.transaction([this.storeName], "readwrite");
       const store = transaction.objectStore(this.storeName);
       const request = store.delete(key);
       request.onsuccess = () => resolve();
@@ -98,12 +90,9 @@ class SimpleIDB {
 
   async clear(): Promise<void> {
     await this.initPromise;
+    if (!this.db) throw new Error("DB not initialized");
     return new Promise((resolve, reject) => {
-      if (!this.db) {
-        reject(new Error("DB not initialized"));
-        return;
-      }
-      const transaction = this.db.transaction([this.storeName], "readwrite");
+      const transaction = this.db!.transaction([this.storeName], "readwrite");
       const store = transaction.objectStore(this.storeName);
       const request = store.clear();
       request.onsuccess = () => resolve();
@@ -152,9 +141,16 @@ class LRUCache {
 
       // Reconstruct cache
       keys.forEach((key, index) => {
-        const value = values[index];
-        if (value && typeof key === "number" && value.data) {
-          this.cache.set(key, value);
+        const raw = values[index];
+        if (typeof key !== "number" || !raw || typeof raw !== "object") return;
+
+        const value = raw as Partial<CacheEntry>;
+        if (
+          typeof value.data === "string" &&
+          typeof value.size === "number" &&
+          typeof value.timestamp === "number"
+        ) {
+          this.cache.set(key, value as CacheEntry);
           this.currentBytes += value.size;
         }
       });
@@ -196,7 +192,7 @@ class LRUCache {
 
     // Remove existing entry if updating
     if (this.cache.has(key)) {
-      const oldSize = this.cache.get(key).size;
+      const oldSize = this.cache.get(key)!.size;
       this.currentBytes -= oldSize;
     }
 
@@ -229,6 +225,7 @@ class LRUCache {
     if (!this.cache.has(key)) return false;
 
     const entry = this.cache.get(key);
+    if (!entry) return false;
     this.currentBytes -= entry.size;
     this.cache.delete(key);
     this.accessOrder = this.accessOrder.filter((k) => k !== key);
@@ -246,6 +243,7 @@ class LRUCache {
     if (this.accessOrder.length === 0) return;
 
     const lruKey = this.accessOrder.pop(); // Remove from end (least recent)
+    if (lruKey === undefined) return;
     const entry = this.cache.get(lruKey);
 
     if (entry) {
@@ -330,6 +328,62 @@ let previousActiveTabId: number | null = null; // Track previous active tab for 
 let currentQualityTier = PERF_CONFIG.DEFAULT_QUALITY_TIER; // Current quality setting
 const pendingCaptures = new Set<number>(); // Track tabs with pending captures to avoid duplicates
 let recentOrderRestored = false; // Flag to track if recent order has been restored
+const tabsWithMedia = new Set<number>(); // Track tabs that have media elements (even if paused/muted)
+
+// Persist tabsWithMedia to session storage so it survives service worker suspension
+function saveTabsWithMedia() {
+  try {
+    chrome.storage.session.set({ tabsWithMedia: Array.from(tabsWithMedia) });
+  } catch (e) {
+    // Session storage might fail in some environments
+  }
+}
+
+async function loadTabsWithMedia() {
+  try {
+    const data = await chrome.storage.session.get("tabsWithMedia");
+    if (data.tabsWithMedia && Array.isArray(data.tabsWithMedia)) {
+      data.tabsWithMedia.forEach((id: number) => tabsWithMedia.add(id));
+    }
+  } catch (e) {
+    // Ignore
+  }
+}
+
+// Initialize on load
+loadTabsWithMedia();
+
+// Also query currently audible tabs on startup
+async function initializeAudibleTabs() {
+  try {
+    const audibleTabs = await chrome.tabs.query({ audible: true });
+    for (const tab of audibleTabs) {
+      if (tab.id && !tabsWithMedia.has(tab.id)) {
+        tabsWithMedia.add(tab.id);
+      }
+    }
+    // Also add tabs that are muted (they had audio at some point)
+    const allTabs = await chrome.tabs.query({});
+    for (const tab of allTabs) {
+      if (tab.id && tab.mutedInfo?.muted && !tabsWithMedia.has(tab.id)) {
+        tabsWithMedia.add(tab.id);
+      }
+    }
+    if (tabsWithMedia.size > 0) {
+      saveTabsWithMedia();
+      console.log(`[MEDIA] Initialized ${tabsWithMedia.size} tabs with media`);
+    }
+  } catch (e) {
+    console.debug("[MEDIA] Error initializing audible tabs:", e);
+  }
+}
+
+// Run after a short delay to let service worker settle
+setTimeout(initializeAudibleTabs, 200);
+
+// ... existing code ...
+
+// In the message handler (which I'll find below)
 
 // ============================================================================
 // PERFORMANCE MONITORING
@@ -511,9 +565,15 @@ async function captureTabScreenshot(
           quality: Math.max(30, qualitySettings.quality - 20),
         });
       } catch (retryError) {
+        const retryMessage =
+          retryError instanceof Error
+            ? retryError.message
+            : typeof retryError === "string"
+            ? retryError
+            : String(retryError);
         console.debug(
           `[CAPTURE] Retry also failed for tab ${tabId}:`,
-          retryError.message
+          retryMessage
         );
         return null;
       }
@@ -551,7 +611,13 @@ async function captureTabScreenshot(
 
     return screenshot;
   } catch (error) {
-    console.debug(`[CAPTURE] Failed for tab ${tabId}:`, error.message);
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : typeof error === "string"
+        ? error
+        : String(error);
+    console.debug(`[CAPTURE] Failed for tab ${tabId}:`, errorMessage);
     return null;
   }
 }
@@ -588,7 +654,7 @@ function isTabCapturable(tab: chrome.tabs.Tab): boolean {
 if (typeof chrome !== "undefined" && chrome.tabs) {
   // Listen for tab activation - auto-capture screenshots
   chrome.tabs.onActivated.addListener(
-    async (activeInfo: chrome.tabs.TabActiveInfo) => {
+    async (activeInfo: chrome.tabs.OnActivatedInfo) => {
       try {
         // Update tracking immediately
         previousActiveTabId = activeInfo.tabId;
@@ -605,14 +671,30 @@ if (typeof chrome !== "undefined" && chrome.tabs) {
     }
   );
 
-  // Listen for tab updates (page load complete) - capture screenshot
+  // Listen for tab updates (page load complete) - capture screenshot + track audible state
   chrome.tabs.onUpdated.addListener(
     (
       tabId: number,
-      changeInfo: chrome.tabs.TabChangeInfo,
+      changeInfo: chrome.tabs.OnUpdatedInfo,
       tab: chrome.tabs.Tab
     ) => {
       try {
+        // Track audible state changes - if tab produces sound, mark it as having media
+        if (changeInfo.audible !== undefined) {
+          if (changeInfo.audible) {
+            // Tab started producing sound - definitely has media
+            if (!tabsWithMedia.has(tabId)) {
+              tabsWithMedia.add(tabId);
+              saveTabsWithMedia();
+              console.debug(
+                `[MEDIA] Tab ${tabId} became audible, marked as having media`
+              );
+            }
+          }
+          // Note: We don't remove from tabsWithMedia when audible becomes false
+          // because the tab might just have paused media that can still be controlled
+        }
+
         // Capture when page finishes loading and tab is active
         if (changeInfo.status === "complete" && tab.active) {
           // Delay capture to ensure page is fully rendered
@@ -642,6 +724,10 @@ if (typeof chrome !== "undefined" && chrome.tabs) {
       removeFromRecentOrder(tabId);
       tabOpenOrder.delete(tabId);
       pendingCaptures.delete(tabId);
+      if (tabsWithMedia.has(tabId)) {
+        tabsWithMedia.delete(tabId);
+        saveTabsWithMedia();
+      }
       console.debug(`[CLEANUP] Removed tab ${tabId} from cache`);
     } catch (e) {
       console.debug("[TAB] Error in onRemoved:", e);
@@ -688,7 +774,7 @@ function updateRecentTabOrder(tabId: number) {
   saveRecentOrderDebounced();
 }
 
-function removeFromRecentOrder(tabId) {
+function removeFromRecentOrder(tabId: number) {
   const index = recentTabOrder.indexOf(tabId);
   if (index !== -1) {
     recentTabOrder.splice(index, 1);
@@ -753,6 +839,11 @@ async function handleShowTabSwitcher() {
     const currentWindow = await chrome.windows.getCurrent();
     const tabs = await chrome.tabs.query({ windowId: currentWindow.id });
 
+    const tabsWithIds = tabs.filter(
+      (tab): tab is chrome.tabs.Tab & { id: number } =>
+        typeof tab.id === "number"
+    );
+
     // Fetch tab groups if API is available
     let groups: chrome.tabGroups.TabGroup[] = [];
     if (chrome.tabGroups) {
@@ -765,7 +856,7 @@ async function handleShowTabSwitcher() {
 
     // Initialize open order for tabs we haven't seen yet
     const now = Date.now();
-    tabs.forEach((tab, index) => {
+    tabsWithIds.forEach((tab, index) => {
       if (!tabOpenOrder.has(tab.id)) {
         // Use a timestamp based on tab index for existing tabs
         tabOpenOrder.set(tab.id, now - (tabs.length - index) * 1000);
@@ -773,7 +864,7 @@ async function handleShowTabSwitcher() {
     });
 
     // Sort by recent access order
-    const sortedTabs = sortTabsByRecent(tabs);
+    const sortedTabs = sortTabsByRecent(tabsWithIds);
 
     // INSTANT RESPONSE: Build tab data with cached screenshots only
     // Show screenshots for top 8 most recent tabs for better preview coverage
@@ -807,6 +898,7 @@ async function handleShowTabSwitcher() {
         audible: tab.audible,
         mutedInfo: tab.mutedInfo,
         groupId: tab.groupId,
+        hasMedia: tabsWithMedia.has(tab.id) || tab.audible,
       };
     });
 
@@ -822,6 +914,11 @@ async function handleShowTabSwitcher() {
       active: true,
       currentWindow: true,
     });
+
+    if (!activeTab || typeof activeTab.id !== "number") {
+      console.warn("[INJECT] No active tab found to open overlay");
+      return;
+    }
 
     // Guard: Do not attempt to inject on protected pages
     if (!isTabCapturable(activeTab)) {
@@ -895,7 +992,7 @@ async function sendMessageWithRetry(tabId: number, message: any, retries = 1) {
 
 // Sort tabs by recent usage (most recently accessed first)
 // Uses Chrome's lastAccessed timestamp as primary sort, falls back to our tracking
-function sortTabsByRecent(tabs: chrome.tabs.Tab[]): chrome.tabs.Tab[] {
+function sortTabsByRecent<T extends chrome.tabs.Tab>(tabs: T[]): T[] {
   return [...tabs].sort((a, b) => {
     // Primary: Use Chrome's lastAccessed timestamp if available (most reliable)
     const aLastAccessed = (a as any).lastAccessed || 0;
@@ -908,8 +1005,10 @@ function sortTabsByRecent(tabs: chrome.tabs.Tab[]): chrome.tabs.Tab[] {
     if (bLastAccessed) return 1;
 
     // Fallback: Use our tracked recent order
-    const aRecentIndex = a.id ? recentTabOrder.indexOf(a.id) : -1;
-    const bRecentIndex = b.id ? recentTabOrder.indexOf(b.id) : -1;
+    const aRecentIndex =
+      typeof a.id === "number" ? recentTabOrder.indexOf(a.id) : -1;
+    const bRecentIndex =
+      typeof b.id === "number" ? recentTabOrder.indexOf(b.id) : -1;
 
     // Both in recent order - sort by recency (lower index = more recent)
     if (aRecentIndex !== -1 && bRecentIndex !== -1) {
@@ -921,15 +1020,15 @@ function sortTabsByRecent(tabs: chrome.tabs.Tab[]): chrome.tabs.Tab[] {
     if (bRecentIndex !== -1) return 1;
 
     // Neither in recent - sort by open time (newer first)
-    const aTime = tabOpenOrder.get(a.id!) || 0;
-    const bTime = tabOpenOrder.get(b.id!) || 0;
+    const aTime = typeof a.id === "number" ? tabOpenOrder.get(a.id) ?? 0 : 0;
+    const bTime = typeof b.id === "number" ? tabOpenOrder.get(b.id) ?? 0 : 0;
 
     if (aTime !== bTime) {
       return bTime - aTime;
     }
 
     // Final fallback: tab index (higher index = more recent in Chrome)
-    return b.index - a.index;
+    return (b.index ?? 0) - (a.index ?? 0);
   });
 }
 
@@ -969,6 +1068,16 @@ async function handleMessage(
     }
 
     switch (request.action) {
+      case "reportMediaPresence":
+        if (sender.tab && sender.tab.id) {
+          if (!tabsWithMedia.has(sender.tab.id)) {
+            tabsWithMedia.add(sender.tab.id);
+            saveTabsWithMedia();
+          }
+        }
+        sendResponse({ success: true });
+        break;
+
       case "getRecentlyClosed":
         try {
           const apiMax = 25; // sessions.MAX_SESSION_RESULTS
@@ -1085,6 +1194,53 @@ async function handleMessage(
           sendResponse({ success: true, muted: newMutedStatus });
         } catch (error: any) {
           console.error("[ERROR] Failed to toggle mute:", error);
+          sendResponse({ success: false, error: error.message });
+        }
+        break;
+
+      case "togglePlayPause":
+        if (!request.tabId || typeof request.tabId !== "number") {
+          sendResponse({ success: false, error: "Invalid tab ID" });
+          return;
+        }
+        try {
+          const tab = await chrome.tabs.get(request.tabId);
+          if (isTabCapturable(tab)) {
+            const results = await chrome.scripting.executeScript({
+              target: { tabId: request.tabId },
+              func: () => {
+                const media = [
+                  ...document.querySelectorAll("video, audio"),
+                ] as HTMLMediaElement[];
+                if (media.length === 0)
+                  return { success: false, reason: "no_media" };
+
+                const anyPlaying = media.some((m) => !m.paused && !m.ended);
+                if (anyPlaying) {
+                  media.forEach((m) => m.pause());
+                  return { success: true, playing: false };
+                } else {
+                  media.forEach((m) => m.play().catch(() => {}));
+                  return { success: true, playing: true };
+                }
+              },
+            });
+            if (results && results[0]) {
+              sendResponse({ success: true, ...results[0].result });
+            } else {
+              sendResponse({
+                success: false,
+                error: "Script execution failed",
+              });
+            }
+          } else {
+            sendResponse({
+              success: false,
+              error: "Cannot script in this tab",
+            });
+          }
+        } catch (error: any) {
+          console.error("[ERROR] Failed to toggle play/pause:", error);
           sendResponse({ success: false, error: error.message });
         }
         break;
@@ -1251,10 +1407,9 @@ chrome.storage.local.get(["qualityTier"], (result) => {
       console.log("[INIT] Using default quality tier:", currentQualityTier);
     }
   } catch (e) {
-    console.warn(
-      "[INIT] Failed to load quality tier, using default:",
-      e && e.message ? e.message : e
-    );
+    const msg =
+      e instanceof Error ? e.message : typeof e === "string" ? e : String(e);
+    console.warn("[INIT] Failed to load quality tier, using default:", msg);
   }
 });
 

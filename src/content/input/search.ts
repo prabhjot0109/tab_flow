@@ -158,11 +158,12 @@ export function createSmartSearchHandler() {
   };
 }
 
-export function handleSearch(e) {
+export function handleSearch(e: Event) {
   try {
+    const target = e.target;
     const rawVal =
-      e?.target?.value && typeof e.target.value === "string"
-        ? e.target.value
+      target instanceof HTMLInputElement
+        ? target.value
         : state.domCache?.searchBox?.value ?? "";
     const query = String(rawVal).trim();
 
@@ -175,8 +176,8 @@ export function handleSearch(e) {
       state.domCache.tabHint.classList.toggle("hidden", shouldHideHint);
     }
 
-    // History Mode: starts with ,
-    if (query.startsWith(",")) {
+    // History Mode: starts with ;
+    if (query.startsWith(";")) {
       state.webSearch.active = false;
       state.history.active = true;
       if (state.domCache.grid) {
@@ -192,7 +193,7 @@ export function handleSearch(e) {
       // Update help text for history mode
       if (state.domCache.helpText) {
         state.domCache.helpText.innerHTML = `
-            <span><kbd>,</kbd> History Mode</span>
+            <span><kbd>;</kbd> History Mode</span>
             <span><kbd>←→</kbd> Switch Column</span>
             <span><kbd>↑↓</kbd> Navigate</span>
             <span><kbd>Enter</kbd> Go</span>
@@ -255,14 +256,12 @@ export function handleSearch(e) {
     }
 
     // '.' quick toggle
-    const isDeleteBackward = !!(
-      e &&
-      typeof e.inputType === "string" &&
-      e.inputType === "deleteContentBackward"
-    );
+    const isDeleteBackward =
+      e instanceof InputEvent && e.inputType === "deleteContentBackward";
     if (query === "." && !isDeleteBackward) {
       // clear and toggle view
-      state.domCache.searchBox.value = "";
+      const searchBox = state.domCache?.searchBox;
+      if (searchBox) searchBox.value = "";
       if (state.viewMode === "recent") {
         switchToActive();
       } else {
@@ -322,14 +321,14 @@ export function handleSearch(e) {
 }
 
 // Fuzzy match scoring
-export function fuzzyMatch(text, query) {
+export function fuzzyMatch(text: string | null | undefined, query: string) {
   // Simple "characters in order" matcher with scoring
   // Returns { match: boolean, score: number }
 
   if (!text) return { match: false, score: 0 };
 
-  const t = text.toLowerCase();
-  const q = query.toLowerCase();
+  const t = String(text).toLowerCase();
+  const q = String(query ?? "").toLowerCase();
 
   if (q.length === 0) return { match: true, score: 1 };
   if (t === q) return { match: true, score: 100 };
