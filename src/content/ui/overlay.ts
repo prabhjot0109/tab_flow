@@ -26,18 +26,21 @@ import * as focus from "../input/focus";
 // ============================================================================
 let cachedViewMode: "grid" | "list" = "grid";
 
-// Load view mode from chrome.storage on script initialization
+// Load view mode from chrome.storage once on script initialization
 try {
   chrome.storage.local.get(["tabSwitcherViewMode"], (result) => {
     if (!chrome.runtime.lastError && result.tabSwitcherViewMode) {
-      cachedViewMode = result.tabSwitcherViewMode;
+      const mode = result.tabSwitcherViewMode as "grid" | "list";
+      if (mode === "grid" || mode === "list") {
+        cachedViewMode = mode;
+      }
     }
   });
 } catch {
   // Ignore - use default
 }
 
-/** Get the current cached view mode (synchronous) */
+/** Get the current globally cached view mode (synchronous) */
 function getCachedViewMode(): "grid" | "list" {
   return cachedViewMode;
 }
@@ -52,10 +55,12 @@ function setGlobalViewMode(mode: "grid" | "list") {
   }
 }
 
+// Track initialized shadow roots
+const activeShadowRoots = new WeakSet<ShadowRoot>();
+
 function installShadowEventGuards(shadowRoot: ShadowRoot) {
-  const marker = "__tabSwitcherEventGuardsInstalled";
-  if ((shadowRoot as any)[marker]) return;
-  (shadowRoot as any)[marker] = true;
+  if (activeShadowRoots.has(shadowRoot)) return;
+  activeShadowRoots.add(shadowRoot);
 
   const stopBubbleToPage = (e: Event) => {
     if (!state.isOverlayVisible) return;
@@ -350,7 +355,7 @@ export function createOverlay() {
     // Update grid class
     grid.classList.toggle("list-view", view === "list");
 
-    // Save preference globally via chrome.storage (persists across all sites)
+    // Persist preference globally via chrome.storage (applies across all sites)
     setGlobalViewMode(view);
   });
 

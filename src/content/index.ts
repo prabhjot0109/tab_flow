@@ -65,13 +65,28 @@ if (document.readyState === "complete") {
   window.addEventListener("load", detectMedia);
 }
 
+// Throttled media detection
+let mediaCheckTimeout: ReturnType<typeof setTimeout> | null = null;
+
 // Also check when elements are added
 export const mediaObserver = new MutationObserver((mutations) => {
-  for (const mutation of mutations) {
-    if (mutation.addedNodes.length) {
+  // 1. Quick check: did we actually add a video/audio tag?
+  const hasPotentialMedia = mutations.some((m) =>
+    Array.from(m.addedNodes).some(
+      (n) =>
+        n.nodeName === "VIDEO" ||
+        n.nodeName === "AUDIO" ||
+        (n instanceof HTMLElement && n.querySelector("video, audio"))
+    )
+  );
+
+  if (hasPotentialMedia) {
+    if (mediaCheckTimeout) return; // Already scheduled
+
+    mediaCheckTimeout = setTimeout(() => {
       detectMedia();
-      break;
-    }
+      mediaCheckTimeout = null;
+    }, 2000); // Only check max once every 2 seconds
   }
 });
 
@@ -82,30 +97,19 @@ try {
 }
 
 // ============================================================================
-// AUTO-CLOSE ON PAGE VISIBILITY CHANGE
-// If the user switches tabs, navigates away, or reopens a site where the
-// extension was left open, close the overlay so it starts fresh next time.
+// AUTO-CLOSE ON FOCUS / VISIBILITY CHANGE
+// Close the overlay as soon as the page loses focus (e.g. user switches apps)
+// or the document becomes hidden (user switches tabs). This keeps the
+// extension "fresh" when returning to the page.
 // ============================================================================
+const closeOverlayIfOpen = () => {
+  if (state.isOverlayVisible) closeOverlay();
+};
+
+window.addEventListener("blur", closeOverlayIfOpen);
+
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden && state.isOverlayVisible) {
-    // Page became hidden (user switched tabs or navigated away)
-    // Close the overlay immediately so it resets on next open
-    closeOverlay();
-  }
-});
-
-// Also close on page unload/navigation to ensure clean state
-window.addEventListener("beforeunload", () => {
-  if (state.isOverlayVisible) {
-    closeOverlay();
-  }
-});
-
-// Close on popstate (browser back/forward navigation)
-window.addEventListener("popstate", () => {
-  if (state.isOverlayVisible) {
-    closeOverlay();
-  }
+  if (document.hidden) closeOverlayIfOpen();
 });
 
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {

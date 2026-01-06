@@ -37,7 +37,9 @@ async function initialize(): Promise<void> {
       1024
     ).toFixed(2)}MB`
   );
-  console.log(`Rate Limit: ${PERF_CONFIG.MAX_CAPTURES_PER_SECOND} captures/sec`);
+  console.log(
+    `Rate Limit: ${PERF_CONFIG.MAX_CAPTURES_PER_SECOND} captures/sec`
+  );
   console.log(`Target: <100ms overlay open, <50MB memory, 60fps`);
   console.log("═══════════════════════════════════════════════════════");
 
@@ -126,6 +128,8 @@ async function handleIdleCheck(): Promise<void> {
 // TAB EVENT LISTENERS
 // ============================================================================
 
+let tabSwitchCaptureTimeout: ReturnType<typeof setTimeout> | null = null;
+
 if (typeof chrome !== "undefined" && chrome.tabs) {
   // Listen for tab activation
   chrome.tabs.onActivated.addListener(
@@ -135,10 +139,17 @@ if (typeof chrome !== "undefined" && chrome.tabs) {
         tabTracker.resetActiveTabStartTime();
         tabTracker.updateRecentTabOrder(activeInfo.tabId);
 
-        // Capture after a short delay
-        setTimeout(() => {
+        // Cancel previous capture if user switched away quickly (debounce)
+        if (tabSwitchCaptureTimeout) {
+          clearTimeout(tabSwitchCaptureTimeout);
+        }
+
+        // Capture after a "settle" delay (500ms)
+        // This prevents capturing tabs that are merely stepped over
+        tabSwitchCaptureTimeout = setTimeout(() => {
           screenshot.queueCapture(activeInfo.tabId, screenshotCache, true);
-        }, 200);
+          tabSwitchCaptureTimeout = null;
+        }, 500);
       } catch (e) {
         console.debug("[TAB] Error in onActivated:", e);
       }

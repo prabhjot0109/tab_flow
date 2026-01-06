@@ -86,6 +86,10 @@ export function renderTabsStandard(tabs: Tab[]) {
   grid.classList.remove("virtual-list");
   grid.style.minHeight = "";
 
+  // ARIA accessibility: set listbox role for screen readers
+  grid.setAttribute("role", "listbox");
+  grid.setAttribute("aria-label", "Open tabs");
+
   if (tabs.length === 0) {
     const emptyMsg = document.createElement("div");
     emptyMsg.className = "tab-switcher-empty";
@@ -130,6 +134,10 @@ export function renderTabsVirtual(tabs: Tab[]) {
   // Clear grid and set virtual list mode
   grid.innerHTML = "";
   grid.classList.add("virtual-list");
+
+  // ARIA accessibility: set listbox role for screen readers
+  grid.setAttribute("role", "listbox");
+  grid.setAttribute("aria-label", "Open tabs");
 
   if (tabs.length === 0) {
     const emptyMsg = document.createElement("div");

@@ -1,8 +1,11 @@
 {
   "manifest_version": 3,
   "name": "Browser Tab Switch",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A visual tab switcher with thumbnail previews - navigate tabs with keyboard shortcuts, mouse clicks, or arrow keys",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
+  },
   "permissions": [
     "tabs",
     "tabGroups",

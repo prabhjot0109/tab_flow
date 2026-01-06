@@ -22,8 +22,8 @@
   display: contents !important;
 
   /* CSS Custom Properties - Monochrome Theme (White/Grey/Black) */
-  --bg-overlay: rgba(0, 0, 0, 0.3);
-  --bg-surface: #181818;
+  --bg-overlay: rgba(0, 0, 0, 0.6);
+  --bg-surface: #161616;
   --bg-glass: #303030;
   --bg-glass-hover: #333333;
   --border-subtle: rgba(255, 255, 255, 0.1);
@@ -35,7 +35,7 @@
   --accent: #ffffff;
   --accent-light: #e0e0e0;
   --accent-glow: rgba(255, 255, 255, 0.1);
-  --card-bg: #282828;
+  --card-bg: #303030;
   --card-hover: #2f2f2f;
   --card-selected: #3a3a3a;
   --danger: #ff6b6b;
@@ -51,9 +51,8 @@
   --radius-xs: 4px;
   --radius-full: 9999px;
 
-  --shadow-xl: 0 40px 100px -12px rgba(0, 0, 0, 0.9),
-    0 0 0 1px rgba(255, 255, 255, 0.08);
-  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-xl: 0 4px 16px rgba(0, 0, 0, 0.18);
+  --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.12);
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter",
     sans-serif;
   --transition-fast: 0.1s ease;
@@ -63,7 +62,7 @@
 @media (prefers-color-scheme: light) {
   :host {
     /* Monochrome Light Theme */
-    --bg-overlay: rgba(0, 0, 0, 0.25);
+    --bg-overlay: rgba(0, 0, 0, 0.32);
     --bg-surface: #ffffff;
     --bg-glass: #f5f5f5;
     --bg-glass-hover: #ebebeb;
@@ -79,9 +78,8 @@
     --card-bg: #f8f8f8;
     --card-hover: #f0f0f0;
     --card-selected: #e5e5e5;
-    --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.15),
-      0 0 0 1px rgba(0, 0, 0, 0.06);
-    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+    --shadow-xl: 0 4px 16px rgba(0, 0, 0, 0.12);
+    --shadow-card: 0 2px 6px rgba(0, 0, 0, 0.08);
   }
 }
 
@@ -110,16 +108,15 @@
   position: absolute;
   inset: 0;
   background: var(--bg-overlay);
-  backdrop-filter: blur(40px) saturate(180%);
-  -webkit-backdrop-filter: blur(40px) saturate(180%);
-  animation: backdropFadeIn 0.2s cubic-bezier(0.2, 0, 0, 1);
+  /* No blur or animation - solid background for performance */
 }
 
 .tab-switcher-container {
   position: relative;
   width: 750px;
   max-width: 94vw;
-  max-height: 68vh;
+  /* Fixed max-height for consistent sizing across all modes */
+  max-height: min(68vh, 600px);
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-3xl);
@@ -128,7 +125,7 @@
   flex-direction: column;
   padding: 0;
   overflow: hidden;
-  animation: containerSlideIn 0.2s cubic-bezier(0.2, 0, 0, 1);
+  animation: containerFadeIn 0.15s ease-out;
 }
 
 /* Search Header - Raycast-style Navigation Bar */
@@ -531,45 +528,18 @@
 }
 
 .tab-card:hover {
-  transform: translateY(-2px);
   border-color: var(--border-hover);
   background: var(--card-hover);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  /* No transform or shadow on hover for performance */
 }
 
 .tab-card.selected {
   border-color: var(--accent) !important;
   border-width: 2px !important;
   background: var(--card-selected) !important;
-  /* Raycast-style subtle glow */
-  box-shadow: 0 0 0 2px var(--accent-glow), 0 4px 12px rgba(0, 0, 0, 0.2) !important;
-  /* Slight lift */
-  transform: translateY(-3px) !important;
+  /* Simple ring indicator - no heavy shadows */
+  box-shadow: 0 0 0 2px var(--accent-glow) !important;
   z-index: 50 !important;
-}
-
-.tab-card.selected::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  /* Subtle inner highlight */
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.03) 0%,
-    transparent 100%
-  );
-  pointer-events: none;
-  z-index: 0;
-  animation: none;
-}
-
-@keyframes selection-pulse {
-  from {
-    opacity: 0.4;
-  }
-  to {
-    opacity: 0.8;
-  }
 }
 
 /* Pinned indicator */
@@ -591,15 +561,13 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   z-index: 5;
   opacity: 0.9;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .tab-audio-indicator svg {
@@ -656,13 +624,13 @@
   object-fit: cover;
   object-position: top center;
   opacity: 0.95;
-  transition: all var(--transition-smooth);
+  /* Simple opacity transition only */
+  transition: opacity var(--transition-fast);
 }
 
 .tab-card:hover .screenshot-img,
 .tab-card.selected .screenshot-img {
   opacity: 1;
-  transform: scale(1.04);
 }
 
 /* Favicon Tile */
@@ -684,11 +652,7 @@
   height: 44px;
   object-fit: contain;
   border-radius: var(--radius-sm);
-  transition: transform var(--transition-smooth);
-}
-
-.tab-card:hover .favicon-large {
-  transform: scale(1.08);
+  /* No transition needed */
 }
 
 .tab-card[data-web-search="1"] .favicon-large {
@@ -709,12 +673,12 @@
   font-size: 20px;
   font-weight: 600;
   letter-spacing: -0.02em;
-  transition: all var(--transition-smooth);
+  /* Simple border transition only */
+  transition: border-color var(--transition-fast);
 }
 
 .tab-card:hover .favicon-letter,
 .tab-card.selected .favicon-letter {
-  transform: scale(1.08);
   border-color: var(--accent);
   background: var(--bg-glass-hover);
 }
@@ -797,9 +761,7 @@
   width: 28px;
   height: 28px;
   border-radius: var(--radius-sm);
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.8);
   color: white;
   border: none;
   display: flex;
@@ -808,24 +770,21 @@
   font-size: 16px;
   font-weight: 300;
   opacity: 0;
-  transform: scale(0.8);
-  transition: all var(--transition-smooth);
+  transition: opacity var(--transition-fast), background var(--transition-fast);
   cursor: pointer;
   z-index: 10;
 }
 
 .tab-card:hover .tab-close-btn {
   opacity: 1;
-  transform: scale(1);
 }
 
 .tab-close-btn:hover {
   background: var(--danger);
-  transform: scale(1.1);
 }
 
 .tab-close-btn:active {
-  transform: scale(0.95);
+  opacity: 0.8;
 }
 
 .tab-mute-btn.muted {
@@ -848,8 +807,7 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -857,8 +815,7 @@
   opacity: 0;
   border: none;
   cursor: pointer;
-  transition: all var(--transition-fast);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: opacity var(--transition-fast), background var(--transition-fast);
 }
 
 /* Show play button on hover, or when playing, or when marked visible */
@@ -877,7 +834,6 @@
 .tab-play-btn:hover {
   background: var(--bg-surface);
   color: var(--text-primary);
-  transform: scale(1.1);
   opacity: 1;
 }
 
@@ -898,8 +854,7 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -907,8 +862,7 @@
   opacity: 0;
   border: none;
   cursor: pointer;
-  transition: all var(--transition-fast);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: opacity var(--transition-fast), background var(--transition-fast);
 }
 
 /* Show mute button on hover, or when muted, or when marked visible */
@@ -928,7 +882,6 @@
 .tab-mute-btn:hover {
   background: var(--bg-surface);
   color: var(--text-primary);
-  transform: scale(1.1);
   opacity: 1;
 }
 
@@ -996,33 +949,11 @@ kbd:hover {
   color: var(--text-primary);
 }
 
-/* Animations */
-@keyframes backdropFadeIn {
+/* Animations - Simplified for performance (no blur, minimal transforms) */
+@keyframes containerFadeIn {
   from {
     opacity: 0;
-    backdrop-filter: blur(0);
-  }
-  to {
-    opacity: 1;
-    backdrop-filter: blur(20px) saturate(150%);
-  }
-}
-
-@keyframes containerSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes cardFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(-4px);
   }
   to {
     opacity: 1;
@@ -1157,12 +1088,19 @@ kbd:hover {
   display: block;
 }
 
-/* Responsive */
+/* Responsive - Large screens: allow more height */
+@media (min-width: 1200px) and (min-height: 900px) {
+  .tab-switcher-container {
+    max-height: min(72vh, 720px);
+  }
+}
+
+/* Responsive - Small screens */
 @media (max-width: 768px) {
   .tab-switcher-container {
     padding: 0;
     max-width: 98vw;
-    max-height: 90vh;
+    max-height: min(85vh, 600px);
   }
 
   .tab-switcher-grid {
@@ -1332,4 +1270,32 @@ kbd:hover {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* ============================================================================
+ * ACCESSIBILITY - Reduced Motion
+ * Respects user preference for reduced motion to prevent motion sickness
+ * ============================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .tab-switcher-container {
+    animation: none !important;
+  }
+
+  .tab-card {
+    transition: none !important;
+  }
+
+  .tab-card:hover,
+  .tab-card.selected {
+    transform: none !important;
+  }
 }
