@@ -36,7 +36,7 @@ export function getNavigationHistory(): {
   try {
     // Check if Navigation API is available
     if (!window.navigation || typeof window.navigation.entries !== "function") {
-      console.log("[TAB SWITCHER] Navigation API not available");
+      console.log("[Tab Flow] Navigation API not available");
       return { back: [], forward: [] };
     }
 
@@ -44,13 +44,13 @@ export function getNavigationHistory(): {
     const currentEntry = window.navigation.currentEntry;
 
     if (!entries || entries.length === 0 || !currentEntry) {
-      console.log("[TAB SWITCHER] No navigation entries available");
+      console.log("[Tab Flow] No navigation entries available");
       return { back: [], forward: [] };
     }
 
     const currentIndex = currentEntry.index;
     console.log(
-      "[TAB SWITCHER] Navigation entries:",
+      "[Tab Flow] Navigation entries:",
       entries.length,
       "Current index:",
       currentIndex
@@ -81,14 +81,14 @@ export function getNavigationHistory(): {
     }
 
     console.log(
-      "[TAB SWITCHER] Back entries:",
+      "[Tab Flow] Back entries:",
       backEntries.length,
       "Forward entries:",
       forwardEntries.length
     );
     return { back: backEntries, forward: forwardEntries };
   } catch (error) {
-    console.error("[TAB SWITCHER] Error getting navigation history:", error);
+    console.error("[Tab Flow] Error getting navigation history:", error);
     return { back: [], forward: [] };
   }
 }
@@ -228,7 +228,7 @@ export function handleSearch(e: Event) {
       // Use the Navigation API to get actual browser history entries
       // This is more reliable than tracking history ourselves
       const historyData = getNavigationHistory();
-      console.log("[TAB SWITCHER] Navigation API history:", historyData);
+      console.log("[Tab Flow] Navigation API history:", historyData);
       renderHistoryView(historyData);
       return;
     }
@@ -335,7 +335,7 @@ export function handleSearch(e: Event) {
       renderTabsStandard(filtered);
     }
   } catch (error) {
-    console.error("[TAB SWITCHER] Error in handleSearch:", error);
+    console.error("[Tab Flow] Error in handleSearch:", error);
     // Fallback to showing all tabs
     state.filteredTabs = state.currentTabs;
     state.selectedIndex = 0;
@@ -411,3 +411,7 @@ export function fuzzyMatch(text: string | null | undefined, query: string) {
 
   return { match: true, score: Math.max(1, score) };
 }
+
+
+
+

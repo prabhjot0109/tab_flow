@@ -1,7 +1,7 @@
 // ============================================================================
-// Standalone Tab Switcher - For Protected Pages (chrome://, new tab, etc.)
+// Standalone Tab Flow - For Protected Pages (chrome://, new tab, etc.)
 // ============================================================================
-// This is a popup window version of the tab switcher that works on pages
+// This is a popup window version of the Tab Flow that works on pages
 // where content scripts cannot be injected.
 // ============================================================================
 
@@ -63,28 +63,28 @@ let container: HTMLElement;
 // ============================================================================
 
 async function initialize() {
-  console.log("[SWITCHER POPUP] Initializing...");
+  console.log("[FLOW POPUP] Initializing...");
 
   // Get DOM elements
-  tabGrid = document.getElementById("tab-switcher-grid")!;
-  searchInput = document.querySelector(".tab-switcher-search")!;
+  tabGrid = document.getElementById("tab-flow-grid")!;
+  searchInput = document.querySelector(".tab-flow-search")!;
   gridViewBtn = document.querySelector('[data-view="grid"]')!;
   listViewBtn = document.querySelector('[data-view="list"]')!;
-  sectionTitle = document.querySelector(".tab-switcher-section-title")!;
+  sectionTitle = document.querySelector(".tab-flow-section-title")!;
   tabHint = document.querySelector(".search-tab-hint")!;
-  helpText = document.querySelector(".tab-switcher-help")!;
-  container = document.querySelector(".tab-switcher-container")!;
+  helpText = document.querySelector(".tab-flow-help")!;
+  container = document.querySelector(".tab-flow-container")!;
 
   // Match content-script overlay behavior: clicking the backdrop exits.
   const backdrop = document.querySelector(
-    ".tab-switcher-backdrop"
+    ".tab-flow-backdrop"
   ) as HTMLElement | null;
   backdrop?.addEventListener("click", () => window.close());
 
   // Load view mode preference
   try {
-    const result = await chrome.storage.local.get(["tabSwitcherViewMode"]);
-    if (result.tabSwitcherViewMode === "list") {
+    const result = await chrome.storage.local.get(["TabFlowViewMode"]);
+    if (result.TabFlowViewMode === "list") {
       viewMode = "list";
       gridViewBtn.classList.remove("active");
       listViewBtn.classList.add("active");
@@ -95,9 +95,9 @@ async function initialize() {
 
   // Load tab data from session storage
   try {
-    const result = await chrome.storage.session.get(["switcherTabData"]);
-    if (result.switcherTabData) {
-      const data = result.switcherTabData as TabData;
+    const result = await chrome.storage.session.get(["FlowTabData"]);
+    if (result.FlowTabData) {
+      const data = result.FlowTabData as TabData;
       tabs = data.tabs;
       activeTabs = [...tabs]; // Store for later
       groups = data.groups;
@@ -113,13 +113,13 @@ async function initialize() {
       updateHelpText();
 
       // Clear the session data after loading
-      chrome.storage.session.remove(["switcherTabData"]);
+      chrome.storage.session.remove(["FlowTabData"]);
     } else {
       // Fallback: request tabs directly
       await requestTabsFromBackground();
     }
   } catch (e) {
-    console.error("[SWITCHER POPUP] Failed to load tab data:", e);
+    console.error("[FLOW POPUP] Failed to load tab data:", e);
     await requestTabsFromBackground();
   }
 
@@ -133,7 +133,7 @@ async function initialize() {
 async function requestTabsFromBackground() {
   try {
     const response = await chrome.runtime.sendMessage({
-      action: "getTabsForSwitcher",
+      action: "getTabsForFlow",
     });
     if (response && response.tabs) {
       tabs = response.tabs;
@@ -150,7 +150,7 @@ async function requestTabsFromBackground() {
       updateHelpText();
     }
   } catch (e) {
-    console.error("[SWITCHER POPUP] Failed to request tabs:", e);
+    console.error("[FLOW POPUP] Failed to request tabs:", e);
   }
 }
 
@@ -184,7 +184,7 @@ function setupEventListeners() {
   // window is already open (protected-page fallback).
   if (chrome?.runtime?.onMessage) {
     chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
-      if (request?.action === "switcherPopupCycleNext") {
+      if (request?.action === "FlowPopupCycleNext") {
         selectNext();
         updateSelection();
         sendResponse?.({ success: true });
@@ -318,7 +318,7 @@ function handleSearchKeydown(e: KeyboardEvent) {
 }
 
 function handleKeyDown(e: KeyboardEvent) {
-  // Handle Alt+Q to cycle through tabs (matches normal switcher behavior)
+  // Handle Alt+Q to cycle through tabs (matches normal Flow behavior)
   if ((e.key === "q" || e.key === "Q") && e.altKey) {
     e.preventDefault();
     e.stopPropagation();
@@ -576,7 +576,7 @@ async function switchToTab(tabId: number) {
     }
     window.close();
   } catch (e) {
-    console.error("[SWITCHER POPUP] Failed to switch tab:", e);
+    console.error("[FLOW POPUP] Failed to switch tab:", e);
   }
 }
 
@@ -642,7 +642,7 @@ async function switchToRecent() {
       filteredTabs = [];
     }
   } catch (e) {
-    console.error("[SWITCHER POPUP] Failed to load recently closed:", e);
+    console.error("[FLOW POPUP] Failed to load recently closed:", e);
     tabs = [];
     filteredTabs = [];
   }
@@ -670,7 +670,7 @@ async function restoreSession(sessionId: string) {
     });
     window.close();
   } catch (e) {
-    console.error("[SWITCHER POPUP] Failed to restore session:", e);
+    console.error("[FLOW POPUP] Failed to restore session:", e);
   }
 }
 
@@ -724,7 +724,7 @@ async function closeTab(tabId: number) {
       window.close();
     }
   } catch (e) {
-    console.error("[SWITCHER POPUP] Failed to close tab:", e);
+    console.error("[FLOW POPUP] Failed to close tab:", e);
   }
 }
 
@@ -746,7 +746,7 @@ function setViewMode(mode: "grid" | "list") {
 
   // Save preference
   try {
-    chrome.storage.local.set({ tabSwitcherViewMode: mode });
+    chrome.storage.local.set({ TabFlowViewMode: mode });
   } catch (e) {
     // Ignore
   }
@@ -788,7 +788,7 @@ function renderTabs() {
         : "No tabs found";
 
     tabGrid.innerHTML = `
-      <div class="tab-switcher-empty">
+      <div class="tab-flow-empty">
         <div class="empty-icon">${
           currentMode === "recent" ? "📋" : webSearchActive ? "🌐" : "🔍"
         }</div>
@@ -1080,3 +1080,7 @@ function getGroupColorValue(color: string): string {
 // ============================================================================
 
 document.addEventListener("DOMContentLoaded", initialize);
+
+
+
+

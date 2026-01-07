@@ -211,3 +211,7 @@ export async function initializeExistingTabs(): Promise<void> {
     console.error("[INIT] Failed to initialize existing tabs:", error);
   }
 }
+
+
+
+

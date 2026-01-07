@@ -27,7 +27,7 @@ export class LRUCache {
     this.accessOrder = []; // Track access order for LRU
 
     // Persistence
-    this.storage = new SimpleIDB("TabSwitcherDB", "screenshots");
+    this.storage = new SimpleIDB("TabFlowDB", "screenshots");
     this.ready = this._restoreFromStorage();
   }
 
@@ -194,3 +194,7 @@ export class LRUCache {
       .catch((e) => console.error("Failed to clear storage", e));
   }
 }
+
+
+
+

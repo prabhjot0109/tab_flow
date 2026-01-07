@@ -1,4 +1,4 @@
-/* Visual Tab Switcher - Modern Glass UI 2.0 */
+/* Visual Tab Flow - Modern Glass UI 2.0 */
 /* ============================================================================
  * SHADOW DOM ENCAPSULATED STYLES
  * These styles are completely isolated from the host page.
@@ -84,7 +84,7 @@
 }
 
 /* Overlay */
-.tab-switcher-overlay {
+.tab-flow-overlay {
   position: fixed;
   inset: 0;
   z-index: 2147483647;
@@ -104,14 +104,14 @@
   overscroll-behavior: contain;
 }
 
-.tab-switcher-backdrop {
+.tab-flow-backdrop {
   position: absolute;
   inset: 0;
   background: var(--bg-overlay);
   /* No blur or animation - solid background for performance */
 }
 
-.tab-switcher-container {
+.tab-flow-container {
   position: relative;
   width: 750px;
   max-width: 94vw;
@@ -129,7 +129,7 @@
 }
 
 /* Search Header - Raycast-style Navigation Bar */
-.tab-switcher-search-row {
+.tab-flow-search-row {
   display: flex;
   align-items: center;
   gap: 0;
@@ -139,14 +139,14 @@
   background: transparent;
 }
 
-.tab-switcher-search-wrap {
+.tab-flow-search-wrap {
   flex: 1;
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.tab-switcher-search {
+.tab-flow-search {
   width: 100%;
   background: transparent;
   border: none;
@@ -161,13 +161,13 @@
   caret-color: var(--accent);
 }
 
-.tab-switcher-search:focus {
+.tab-flow-search:focus {
   background: transparent;
   border-color: transparent;
   box-shadow: none;
 }
 
-.tab-switcher-search::placeholder {
+.tab-flow-search::placeholder {
   color: var(--text-muted);
   font-weight: 400;
 }
@@ -182,8 +182,8 @@
   transition: color var(--transition-fast);
 }
 
-.tab-switcher-search:focus ~ .search-icon,
-.tab-switcher-search-wrap:focus-within .search-icon {
+.tab-flow-search:focus ~ .search-icon,
+.tab-flow-search-wrap:focus-within .search-icon {
   color: var(--text-muted);
   transform: none;
 }
@@ -223,7 +223,7 @@
 }
 
 /* Section Header with View Toggle */
-.tab-switcher-section-header {
+.tab-flow-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -231,7 +231,7 @@
   flex-shrink: 0;
 }
 
-.tab-switcher-section-title {
+.tab-flow-section-title {
   font-size: 12px;
   font-weight: 600;
   color: var(--text-muted);
@@ -239,7 +239,7 @@
   letter-spacing: 0.05em;
 }
 
-.tab-switcher-view-toggle {
+.tab-flow-view-toggle {
   display: flex;
   align-items: center;
   gap: 2px;
@@ -303,7 +303,7 @@
 }
 
 /* Grid - Active Tabs */
-.tab-switcher-grid {
+.tab-flow-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 10px;
@@ -317,13 +317,13 @@
 }
 
 /* List View Mode */
-.tab-switcher-grid.list-view {
+.tab-flow-grid.list-view {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.tab-switcher-grid.list-view .tab-card {
+.tab-flow-grid.list-view .tab-card {
   width: 100%;
   height: auto;
   min-height: 52px;
@@ -333,15 +333,15 @@
   gap: 12px;
 }
 
-.tab-switcher-grid.list-view .tab-card:hover {
+.tab-flow-grid.list-view .tab-card:hover {
   transform: none;
 }
 
-.tab-switcher-grid.list-view .tab-card.selected {
+.tab-flow-grid.list-view .tab-card.selected {
   transform: none !important;
 }
 
-.tab-switcher-grid.list-view .tab-thumbnail {
+.tab-flow-grid.list-view .tab-thumbnail {
   flex: 0 0 36px;
   height: 36px;
   width: 36px;
@@ -349,22 +349,22 @@
   border-radius: var(--radius-sm);
 }
 
-.tab-switcher-grid.list-view .tab-info {
+.tab-flow-grid.list-view .tab-info {
   flex: 1;
   padding: 0;
   min-width: 0;
 }
 
-.tab-switcher-grid.list-view .tab-title {
+.tab-flow-grid.list-view .tab-title {
   font-size: 14px;
 }
 
-.tab-switcher-grid.list-view .tab-url {
+.tab-flow-grid.list-view .tab-url {
   padding-left: 0;
   font-size: 12px;
 }
 
-.tab-switcher-grid.list-view .tab-close-btn {
+.tab-flow-grid.list-view .tab-close-btn {
   position: relative;
   top: auto;
   right: auto;
@@ -374,11 +374,11 @@
   flex-shrink: 0;
 }
 
-.tab-switcher-grid.list-view .tab-card:hover .tab-close-btn {
+.tab-flow-grid.list-view .tab-card:hover .tab-close-btn {
   opacity: 1;
 }
 
-.tab-switcher-grid.list-view .tab-media-controls {
+.tab-flow-grid.list-view .tab-media-controls {
   position: relative;
   bottom: auto;
   right: auto;
@@ -388,36 +388,36 @@
   flex-shrink: 0;
 }
 
-.tab-switcher-grid.list-view .tab-play-btn,
-.tab-switcher-grid.list-view .tab-mute-btn {
+.tab-flow-grid.list-view .tab-play-btn,
+.tab-flow-grid.list-view .tab-mute-btn {
   opacity: 0.6;
 }
 
-.tab-switcher-grid.list-view .tab-card:hover .tab-play-btn,
-.tab-switcher-grid.list-view .tab-card:hover .tab-mute-btn,
-.tab-switcher-grid.list-view .tab-play-btn.playing,
-.tab-switcher-grid.list-view .tab-play-btn.visible,
-.tab-switcher-grid.list-view .tab-mute-btn.muted,
-.tab-switcher-grid.list-view .tab-mute-btn.visible,
-.tab-switcher-grid.list-view .tab-card.has-media .tab-play-btn,
-.tab-switcher-grid.list-view .tab-card.has-media .tab-mute-btn,
-.tab-switcher-grid.list-view .tab-card.is-audible .tab-play-btn,
-.tab-switcher-grid.list-view .tab-card.is-audible .tab-mute-btn,
-.tab-switcher-grid.list-view .tab-card.is-muted .tab-mute-btn {
+.tab-flow-grid.list-view .tab-card:hover .tab-play-btn,
+.tab-flow-grid.list-view .tab-card:hover .tab-mute-btn,
+.tab-flow-grid.list-view .tab-play-btn.playing,
+.tab-flow-grid.list-view .tab-play-btn.visible,
+.tab-flow-grid.list-view .tab-mute-btn.muted,
+.tab-flow-grid.list-view .tab-mute-btn.visible,
+.tab-flow-grid.list-view .tab-card.has-media .tab-play-btn,
+.tab-flow-grid.list-view .tab-card.has-media .tab-mute-btn,
+.tab-flow-grid.list-view .tab-card.is-audible .tab-play-btn,
+.tab-flow-grid.list-view .tab-card.is-audible .tab-mute-btn,
+.tab-flow-grid.list-view .tab-card.is-muted .tab-mute-btn {
   opacity: 1;
 }
 
 /* Recent Mode & Search Mode - Column Layout */
-.tab-switcher-grid.recent-mode,
-.tab-switcher-grid.search-mode {
+.tab-flow-grid.recent-mode,
+.tab-flow-grid.search-mode {
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-height: auto;
 }
 
-.tab-switcher-grid.recent-mode .tab-media-controls,
-.tab-switcher-grid.search-mode .tab-media-controls {
+.tab-flow-grid.recent-mode .tab-media-controls,
+.tab-flow-grid.search-mode .tab-media-controls {
   position: relative;
   bottom: auto;
   right: auto;
@@ -427,77 +427,77 @@
   flex-shrink: 0;
 }
 
-.tab-switcher-grid.recent-mode .tab-play-btn,
-.tab-switcher-grid.recent-mode .tab-mute-btn,
-.tab-switcher-grid.search-mode .tab-play-btn,
-.tab-switcher-grid.search-mode .tab-mute-btn {
+.tab-flow-grid.recent-mode .tab-play-btn,
+.tab-flow-grid.recent-mode .tab-mute-btn,
+.tab-flow-grid.search-mode .tab-play-btn,
+.tab-flow-grid.search-mode .tab-mute-btn {
   opacity: 0.6;
 }
 
-.tab-switcher-grid.recent-mode .tab-card:hover .tab-play-btn,
-.tab-switcher-grid.recent-mode .tab-card:hover .tab-mute-btn,
-.tab-switcher-grid.search-mode .tab-card:hover .tab-play-btn,
-.tab-switcher-grid.search-mode .tab-card:hover .tab-mute-btn,
-.tab-switcher-grid.recent-mode .tab-card.has-media .tab-play-btn,
-.tab-switcher-grid.recent-mode .tab-card.has-media .tab-mute-btn,
-.tab-switcher-grid.search-mode .tab-card.has-media .tab-play-btn,
-.tab-switcher-grid.search-mode .tab-card.has-media .tab-mute-btn,
-.tab-switcher-grid.recent-mode .tab-card.is-audible .tab-play-btn,
-.tab-switcher-grid.recent-mode .tab-card.is-audible .tab-mute-btn,
-.tab-switcher-grid.search-mode .tab-card.is-audible .tab-play-btn,
-.tab-switcher-grid.search-mode .tab-card.is-audible .tab-mute-btn {
+.tab-flow-grid.recent-mode .tab-card:hover .tab-play-btn,
+.tab-flow-grid.recent-mode .tab-card:hover .tab-mute-btn,
+.tab-flow-grid.search-mode .tab-card:hover .tab-play-btn,
+.tab-flow-grid.search-mode .tab-card:hover .tab-mute-btn,
+.tab-flow-grid.recent-mode .tab-card.has-media .tab-play-btn,
+.tab-flow-grid.recent-mode .tab-card.has-media .tab-mute-btn,
+.tab-flow-grid.search-mode .tab-card.has-media .tab-play-btn,
+.tab-flow-grid.search-mode .tab-card.has-media .tab-mute-btn,
+.tab-flow-grid.recent-mode .tab-card.is-audible .tab-play-btn,
+.tab-flow-grid.recent-mode .tab-card.is-audible .tab-mute-btn,
+.tab-flow-grid.search-mode .tab-card.is-audible .tab-play-btn,
+.tab-flow-grid.search-mode .tab-card.is-audible .tab-mute-btn {
   opacity: 1;
 }
 
-.tab-switcher-grid::-webkit-scrollbar {
+.tab-flow-grid::-webkit-scrollbar {
   width: 6px;
 }
 
-.tab-switcher-grid::-webkit-scrollbar-track {
+.tab-flow-grid::-webkit-scrollbar-track {
   background: transparent;
   margin: 4px 0;
 }
 
-.tab-switcher-grid::-webkit-scrollbar-thumb {
+.tab-flow-grid::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.15);
   border-radius: 100px;
   transition: background 0.2s ease;
 }
 
-.tab-switcher-grid::-webkit-scrollbar-thumb:hover {
+.tab-flow-grid::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.25);
 }
 
-.tab-switcher-grid::-webkit-scrollbar-thumb:active {
+.tab-flow-grid::-webkit-scrollbar-thumb:active {
   background: rgba(255, 255, 255, 0.35);
 }
 
 /* Firefox modern scrollbar */
-.tab-switcher-grid {
+.tab-flow-grid {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
 @media (prefers-color-scheme: light) {
-  .tab-switcher-grid::-webkit-scrollbar-thumb {
+  .tab-flow-grid::-webkit-scrollbar-thumb {
     background: rgba(0, 0, 0, 0.12);
   }
 
-  .tab-switcher-grid::-webkit-scrollbar-thumb:hover {
+  .tab-flow-grid::-webkit-scrollbar-thumb:hover {
     background: rgba(0, 0, 0, 0.2);
   }
 
-  .tab-switcher-grid::-webkit-scrollbar-thumb:active {
+  .tab-flow-grid::-webkit-scrollbar-thumb:active {
     background: rgba(0, 0, 0, 0.3);
   }
 
-  .tab-switcher-grid {
+  .tab-flow-grid {
     scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
   }
 }
 
 /* Empty State */
-.tab-switcher-empty {
+.tab-flow-empty {
   grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
@@ -892,7 +892,7 @@
 }
 
 /* Footer/Help - Raycast-style Action Bar */
-.tab-switcher-help {
+.tab-flow-help {
   display: flex;
   align-items: center;
   gap: 0;
@@ -908,7 +908,7 @@
   min-height: 40px;
 }
 
-.tab-switcher-help span {
+.tab-flow-help span {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -919,7 +919,7 @@
   color: var(--text-muted);
 }
 
-.tab-switcher-help span:last-child {
+.tab-flow-help span:last-child {
   border-right: none;
 }
 
@@ -962,7 +962,7 @@ kbd:hover {
 }
 
 /* Recent mode styles - Column Layout */
-.tab-switcher-grid.recent-mode .tab-card {
+.tab-flow-grid.recent-mode .tab-card {
   width: 100%;
   height: auto;
   min-height: 52px;
@@ -975,20 +975,20 @@ kbd:hover {
   box-shadow: none;
 }
 
-.tab-switcher-grid.recent-mode .tab-card:hover {
+.tab-flow-grid.recent-mode .tab-card:hover {
   transform: none;
   border-color: var(--border-hover);
   box-shadow: none;
 }
 
-.tab-switcher-grid.recent-mode .tab-card.selected {
+.tab-flow-grid.recent-mode .tab-card.selected {
   border-color: var(--accent);
   background: var(--card-selected);
   transform: none !important;
   box-shadow: 0 0 0 2px var(--accent-glow) !important;
 }
 
-.tab-switcher-grid.recent-mode .tab-thumbnail {
+.tab-flow-grid.recent-mode .tab-thumbnail {
   flex: 0 0 40px;
   height: 40px;
   width: 40px;
@@ -997,47 +997,47 @@ kbd:hover {
   background: var(--bg-glass);
 }
 
-.tab-switcher-grid.recent-mode .favicon-tile {
+.tab-flow-grid.recent-mode .favicon-tile {
   border-radius: var(--radius-sm);
 }
 
-.tab-switcher-grid.recent-mode .favicon-large {
+.tab-flow-grid.recent-mode .favicon-large {
   width: 26px;
   height: 26px;
 }
 
-.tab-switcher-grid.recent-mode .favicon-letter {
+.tab-flow-grid.recent-mode .favicon-letter {
   width: 40px;
   height: 40px;
   font-size: 17px;
   border-radius: var(--radius-sm);
 }
 
-.tab-switcher-grid.recent-mode .tab-info {
+.tab-flow-grid.recent-mode .tab-info {
   flex: 1;
   padding: 0;
   min-width: 0;
 }
 
-.tab-switcher-grid.recent-mode .tab-header {
+.tab-flow-grid.recent-mode .tab-header {
   margin-bottom: 3px;
 }
 
-.tab-switcher-grid.recent-mode .tab-title {
+.tab-flow-grid.recent-mode .tab-title {
   font-size: 14px;
 }
 
-.tab-switcher-grid.recent-mode .tab-url {
+.tab-flow-grid.recent-mode .tab-url {
   padding-left: 0;
   font-size: 12px;
 }
 
-.tab-switcher-grid.recent-mode .tab-close-btn {
+.tab-flow-grid.recent-mode .tab-close-btn {
   display: none;
 }
 
 /* Search mode styles - Column Layout (same as recent) */
-.tab-switcher-grid.search-mode .tab-card {
+.tab-flow-grid.search-mode .tab-card {
   width: 100%;
   height: auto;
   min-height: 52px;
@@ -1050,20 +1050,20 @@ kbd:hover {
   box-shadow: none;
 }
 
-.tab-switcher-grid.search-mode .tab-card:hover {
+.tab-flow-grid.search-mode .tab-card:hover {
   transform: none;
   border-color: var(--border-hover);
   box-shadow: none;
 }
 
-.tab-switcher-grid.search-mode .tab-card.selected {
+.tab-flow-grid.search-mode .tab-card.selected {
   border-color: var(--accent);
   background: var(--card-selected);
   transform: none !important;
   box-shadow: 0 0 0 2px var(--accent-glow) !important;
 }
 
-.tab-switcher-grid.search-mode .tab-thumbnail {
+.tab-flow-grid.search-mode .tab-thumbnail {
   flex: 0 0 36px;
   height: 36px;
   width: 36px;
@@ -1072,17 +1072,17 @@ kbd:hover {
   background: var(--bg-glass);
 }
 
-.tab-switcher-grid.search-mode .tab-info {
+.tab-flow-grid.search-mode .tab-info {
   flex: 1;
   padding: 0;
   min-width: 0;
 }
 
-.tab-switcher-grid.search-mode .tab-title {
+.tab-flow-grid.search-mode .tab-title {
   font-size: 14px;
 }
 
-.tab-switcher-grid.search-mode .tab-url {
+.tab-flow-grid.search-mode .tab-url {
   padding-left: 0;
   font-size: 12px;
   display: block;
@@ -1090,20 +1090,20 @@ kbd:hover {
 
 /* Responsive - Large screens: allow more height */
 @media (min-width: 1200px) and (min-height: 900px) {
-  .tab-switcher-container {
+  .tab-flow-container {
     max-height: min(72vh, 720px);
   }
 }
 
 /* Responsive - Small screens */
 @media (max-width: 768px) {
-  .tab-switcher-container {
+  .tab-flow-container {
     padding: 0;
     max-width: 98vw;
     max-height: min(85vh, 600px);
   }
 
-  .tab-switcher-grid {
+  .tab-flow-grid {
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 8px;
     padding: 10px;
@@ -1113,13 +1113,13 @@ kbd:hover {
     height: 140px;
   }
 
-  .tab-switcher-help {
+  .tab-flow-help {
     gap: 0;
     font-size: 10px;
     padding: 6px 10px;
   }
 
-  .tab-switcher-help span {
+  .tab-flow-help span {
     padding: 0 6px;
   }
 
@@ -1286,7 +1286,7 @@ kbd:hover {
     scroll-behavior: auto !important;
   }
 
-  .tab-switcher-container {
+  .tab-flow-container {
     animation: none !important;
   }
 
@@ -1299,3 +1299,7 @@ kbd:hover {
     transform: none !important;
   }
 }
+
+
+
+

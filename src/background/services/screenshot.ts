@@ -248,3 +248,7 @@ export function isTabCapturable(tab: chrome.tabs.Tab): boolean {
 export function removePendingCapture(tabId: number): void {
   pendingCaptures.delete(tabId);
 }
+
+
+
+

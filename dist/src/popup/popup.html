@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Browser Tab Switch</title>
+    <title>Tab Flow</title>
     <script type="module" crossorigin src="/assets/popup.html-B2bnJHwC.js"></script>
     <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
     <link rel="stylesheet" crossorigin href="/assets/popup-z9s7xm7Q.css">
@@ -11,7 +11,7 @@
   <body>
     <div class="header">
       <img src="data:image/png;base64,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" class="logo" alt="Logo" />
-      <h1>Browser Tab Switch</h1>
+      <h1>Tab Flow</h1>
     </div>
 
     <div class="shortcut-hero">

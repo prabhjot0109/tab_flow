@@ -113,7 +113,7 @@ export function closeOverlay() {
       }, 200); // Match CSS transition
     });
   } catch (error) {
-    console.error("[TAB SWITCHER] Error in closeOverlay:", error);
+    console.error("[Tab Flow] Error in closeOverlay:", error);
     // Force cleanup even on error
     state.isOverlayVisible = false;
     state.isClosing = false;
@@ -135,7 +135,7 @@ export function closeOverlay() {
 export function switchToTab(tabId: number) {
   try {
     if (!tabId || typeof tabId !== "number") {
-      console.error("[TAB SWITCHER] Invalid tab ID:", tabId);
+      console.error("[Tab Flow] Invalid tab ID:", tabId);
       return;
     }
 
@@ -143,20 +143,20 @@ export function switchToTab(tabId: number) {
       chrome.runtime.sendMessage({ action: "switchToTab", tabId }, () => {
         if (chrome.runtime.lastError) {
           console.debug(
-            "[TAB SWITCHER] SW not ready:",
+            "[Tab Flow] SW not ready:",
             chrome.runtime.lastError.message
           );
         }
       });
     } catch (msgErr: any) {
       console.debug(
-        "[TAB SWITCHER] sendMessage warn:",
+        "[Tab Flow] sendMessage warn:",
         msgErr?.message || msgErr
       );
     }
     closeOverlay();
   } catch (error) {
-    console.error("[TAB SWITCHER] Exception in switchToTab:", error);
+    console.error("[Tab Flow] Exception in switchToTab:", error);
     closeOverlay();
   }
 }
@@ -170,7 +170,7 @@ export function restoreSession(sessionId: string) {
         () => {
           if (chrome.runtime.lastError) {
             console.debug(
-              "[TAB SWITCHER] SW not ready (restoreSession):",
+              "[Tab Flow] SW not ready (restoreSession):",
               chrome.runtime.lastError.message
             );
           }
@@ -178,13 +178,13 @@ export function restoreSession(sessionId: string) {
       );
     } catch (msgErr: any) {
       console.debug(
-        "[TAB SWITCHER] sendMessage warn:",
+        "[Tab Flow] sendMessage warn:",
         msgErr?.message || msgErr
       );
     }
     closeOverlay();
   } catch (error) {
-    console.error("[TAB SWITCHER] Exception in restoreSession:", error);
+    console.error("[Tab Flow] Exception in restoreSession:", error);
     closeOverlay();
   }
 }
@@ -192,13 +192,13 @@ export function restoreSession(sessionId: string) {
 export function closeTab(tabId: number, index: number) {
   try {
     if (!tabId || typeof tabId !== "number") {
-      console.error("[TAB SWITCHER] Invalid tab ID for closing:", tabId);
+      console.error("[Tab Flow] Invalid tab ID for closing:", tabId);
       return;
     }
 
     const tabExists = state.currentTabs.some((tab) => tab && tab.id === tabId);
     if (!tabExists) {
-      console.warn("[TAB SWITCHER] Tab no longer exists:", tabId);
+      console.warn("[Tab Flow] Tab no longer exists:", tabId);
       state.filteredTabs = state.filteredTabs.filter(
         (tab) => tab && tab.id !== tabId
       );
@@ -230,7 +230,7 @@ export function closeTab(tabId: number, index: number) {
       (response) => {
         if (chrome.runtime.lastError) {
           console.error(
-            "[TAB SWITCHER] Error closing tab:",
+            "[Tab Flow] Error closing tab:",
             chrome.runtime.lastError.message
           );
           return;
@@ -265,7 +265,7 @@ export function closeTab(tabId: number, index: number) {
       }
     );
   } catch (error) {
-    console.error("[TAB SWITCHER] Exception in closeTab:", error);
+    console.error("[Tab Flow] Exception in closeTab:", error);
   }
 }
 
@@ -276,7 +276,7 @@ export function toggleMute(tabId: number, btnElement: HTMLElement) {
     chrome.runtime.sendMessage({ action: "toggleMute", tabId }, (response) => {
       if (chrome.runtime.lastError) {
         console.error(
-          "[TAB SWITCHER] Error toggling mute:",
+          "[Tab Flow] Error toggling mute:",
           chrome.runtime.lastError
         );
         return;
@@ -305,7 +305,7 @@ export function toggleMute(tabId: number, btnElement: HTMLElement) {
       }
     });
   } catch (error) {
-    console.error("[TAB SWITCHER] Exception in toggleMute:", error);
+    console.error("[Tab Flow] Exception in toggleMute:", error);
   }
 }
 
@@ -318,7 +318,7 @@ export function togglePlayPause(tabId: number, btnElement: HTMLElement) {
       (response) => {
         if (chrome.runtime.lastError) {
           console.error(
-            "[TAB SWITCHER] Error toggling play/pause:",
+            "[Tab Flow] Error toggling play/pause:",
             chrome.runtime.lastError
           );
           return;
@@ -349,7 +349,7 @@ export function togglePlayPause(tabId: number, btnElement: HTMLElement) {
       }
     );
   } catch (error) {
-    console.error("[TAB SWITCHER] Exception in togglePlayPause:", error);
+    console.error("[Tab Flow] Exception in togglePlayPause:", error);
   }
 }
 
@@ -401,7 +401,7 @@ export function createGroup(tabId: number) {
     chrome.runtime.sendMessage({ action: "createGroup", tabId }, (response) => {
       if (chrome.runtime.lastError) {
         console.error(
-          "[TAB SWITCHER] Error creating group:",
+          "[Tab Flow] Error creating group:",
           chrome.runtime.lastError.message
         );
         return;
@@ -411,7 +411,7 @@ export function createGroup(tabId: number) {
       }
     });
   } catch (error) {
-    console.error("[TAB SWITCHER] Exception in createGroup:", error);
+    console.error("[Tab Flow] Exception in createGroup:", error);
   }
 }
 
@@ -455,7 +455,7 @@ export async function switchToRecent() {
           (res) => {
             if (chrome.runtime.lastError) {
               console.debug(
-                "[TAB SWITCHER] Runtime error:",
+                "[Tab Flow] Runtime error:",
                 chrome.runtime.lastError.message
               );
               resolve([]);
@@ -470,7 +470,7 @@ export async function switchToRecent() {
       }
     });
   } catch (e) {
-    console.debug("[TAB SWITCHER] Failed to load recently closed:", e);
+    console.debug("[Tab Flow] Failed to load recently closed:", e);
   }
   state.recentItems = items.map((it, idx) => ({
     id: undefined, // Recent items don't have tab IDs
@@ -490,3 +490,7 @@ export async function switchToRecent() {
 }
 
 // toggleGroupCollapse removed as headers/collapsing are no longer used
+
+
+
+

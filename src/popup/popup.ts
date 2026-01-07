@@ -5,3 +5,7 @@ if (shortcutsLink) {
     chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
   });
 }
+
+
+
+

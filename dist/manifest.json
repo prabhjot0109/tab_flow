@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Browser Tab Switch",
+  "name": "Tab Flow",
   "version": "1.1.0",
-  "description": "A visual tab switcher with thumbnail previews - navigate tabs with keyboard shortcuts, mouse clicks, or arrow keys",
+  "description": "A visual Tab Flow with thumbnail previews - navigate tabs with keyboard shortcuts, mouse clicks, or arrow keys",
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self';"
   },
@@ -26,7 +26,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/index.ts-loader-DkLoYLoU.js"
+        "assets/index.ts-loader-CTQ9uiuU.js"
       ],
       "matches": [
         "<all_urls>"
@@ -36,13 +36,13 @@
     }
   ],
   "commands": {
-    "show-tab-switcher": {
+    "show-tab-flow": {
       "suggested_key": {
         "default": "Alt+Q",
         "windows": "Alt+Q",
         "mac": "Alt+Q"
       },
-      "description": "Show visual tab switcher (can be changed to Ctrl+Tab in chrome://extensions/shortcuts)"
+      "description": "Show visual Tab Flow (can be changed to Ctrl+Tab in chrome://extensions/shortcuts)"
     },
     "cycle-next-tab": {
       "suggested_key": {
@@ -50,7 +50,7 @@
         "windows": "Ctrl+Shift+K",
         "mac": "Command+Shift+K"
       },
-      "description": "Cycle to next tab in switcher"
+      "description": "Cycle to next tab in Flow"
     }
   },
   "action": {
@@ -73,7 +73,7 @@
       ],
       "resources": [
         "_favicon/*",
-        "src/switcher/*"
+        "src/flow/*"
       ],
       "use_dynamic_url": false
     },
@@ -83,7 +83,7 @@
         "https://*/*"
       ],
       "resources": [
-        "assets/index.ts-am_Ujw7n.js"
+        "assets/index.ts-D_wZtUlM.js"
       ],
       "use_dynamic_url": false
     }

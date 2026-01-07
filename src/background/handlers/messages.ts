@@ -18,7 +18,7 @@ export async function handleMessage(
   sender: chrome.runtime.MessageSender,
   sendResponse: (response?: any) => void,
   screenshotCache: LRUCache,
-  showTabSwitcher: () => Promise<void>
+  showTabFlow: () => Promise<void>
 ): Promise<void> {
   try {
     if (!request || !request.action) {
@@ -28,8 +28,8 @@ export async function handleMessage(
     }
 
     switch (request.action) {
-      case "switcherPopupCycleNext":
-        // Internal message used to control the standalone switcher popup.
+      case "FlowPopupCycleNext":
+        // Internal message used to control the standalone Flow popup.
         // The popup page listens for this; background can safely ack it too.
         sendResponse({ success: true });
         break;
@@ -206,7 +206,7 @@ export async function handleMessage(
 
       case "refreshTabList":
         try {
-          await showTabSwitcher();
+          await showTabFlow();
           sendResponse({ success: true });
         } catch (error: any) {
           console.error("[ERROR] Failed to refresh tab list:", error);
@@ -277,7 +277,7 @@ export async function handleMessage(
         }
         break;
 
-      case "getTabsForSwitcher":
+      case "getTabsForFlow":
         // Used by the popup window fallback to request tab data directly
         try {
           const currentWindow = await chrome.windows.getCurrent();
@@ -346,7 +346,7 @@ export async function handleMessage(
             groups: groupsData,
           });
         } catch (error: any) {
-          console.error("[ERROR] Failed to get tabs for switcher:", error);
+          console.error("[ERROR] Failed to get tabs for Flow:", error);
           sendResponse({ success: false, error: error.message });
         }
         break;
@@ -405,3 +405,7 @@ export async function sendMessageWithRetry(
     }
   }
 }
+
+
+
+

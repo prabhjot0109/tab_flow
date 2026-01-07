@@ -94,10 +94,10 @@ export function handleGridClick(e: MouseEvent) {
     if (tabId && !Number.isNaN(tabId)) {
       switchToTab(tabId);
     } else {
-      console.error("[TAB SWITCHER] Invalid tab ID in card:", tabCard);
+      console.error("[Tab Flow] Invalid tab ID in card:", tabCard);
     }
   } catch (error) {
-    console.error("[TAB SWITCHER] Error in handleGridClick:", error);
+    console.error("[Tab Flow] Error in handleGridClick:", error);
   }
 }
 
@@ -345,7 +345,7 @@ export function handleKeyDown(e: KeyboardEvent) {
         break;
     }
   } catch (error) {
-    console.error("[TAB SWITCHER] Error in handleKeyDown:", error);
+    console.error("[Tab Flow] Error in handleKeyDown:", error);
   }
 }
 
@@ -529,7 +529,7 @@ export function handleSearchKeydown(e: KeyboardEvent) {
       return;
     }
   } catch (error) {
-    console.error("[TAB SWITCHER] Error in handleSearchKeydown:", error);
+    console.error("[Tab Flow] Error in handleSearchKeydown:", error);
   }
 }
 
@@ -560,3 +560,7 @@ function selectRight() {
 function selectLeft() {
   selectPrevious();
 }
+
+
+
+

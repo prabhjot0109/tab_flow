@@ -28,9 +28,9 @@ let cachedViewMode: "grid" | "list" = "grid";
 
 // Load view mode from chrome.storage once on script initialization
 try {
-  chrome.storage.local.get(["tabSwitcherViewMode"], (result) => {
-    if (!chrome.runtime.lastError && result.tabSwitcherViewMode) {
-      const mode = result.tabSwitcherViewMode as "grid" | "list";
+  chrome.storage.local.get(["TabFlowViewMode"], (result) => {
+    if (!chrome.runtime.lastError && result.TabFlowViewMode) {
+      const mode = result.TabFlowViewMode as "grid" | "list";
       if (mode === "grid" || mode === "list") {
         cachedViewMode = mode;
       }
@@ -49,7 +49,7 @@ function getCachedViewMode(): "grid" | "list" {
 function setGlobalViewMode(mode: "grid" | "list") {
   cachedViewMode = mode;
   try {
-    chrome.storage.local.set({ tabSwitcherViewMode: mode });
+    chrome.storage.local.set({ TabFlowViewMode: mode });
   } catch {
     // Ignore storage errors
   }
@@ -139,7 +139,7 @@ export function ensureShadowRoot() {
       if (existingHost) {
         state.host = existingHost;
       } else {
-        const host = document.createElement("tab-switcher-mount");
+        const host = document.createElement("tab-flow-mount");
         host.id = SHADOW_HOST_ID;
         // CRITICAL: Complete isolation from host page
         host.style.cssText = `
@@ -191,7 +191,7 @@ export function ensureShadowRoot() {
     installShadowEventGuards(state.shadowRoot);
     return state.shadowRoot;
   } catch (error) {
-    console.error("[TAB SWITCHER] Failed to initialize shadow root:", error);
+    console.error("[Tab Flow] Failed to initialize shadow root:", error);
     return null;
   }
 }
@@ -206,35 +206,35 @@ export function createOverlay() {
 
   // Create overlay container
   const overlay = document.createElement("div");
-  overlay.id = "visual-tab-switcher-overlay";
-  overlay.className = "tab-switcher-overlay";
+  overlay.id = "visual-tab-flow-overlay";
+  overlay.className = "tab-flow-overlay";
   overlay.style.willChange = "opacity"; // GPU hint
 
   // Create backdrop
   const backdrop = document.createElement("div");
-  backdrop.className = "tab-switcher-backdrop";
+  backdrop.className = "tab-flow-backdrop";
   overlay.appendChild(backdrop);
 
   // Create main container
   const container = document.createElement("div");
-  container.className = "tab-switcher-container";
+  container.className = "tab-flow-container";
   container.style.transform = "translate3d(0, 0, 0)"; // GPU acceleration
 
   // Search + actions row
   const searchRow = document.createElement("div");
-  searchRow.className = "tab-switcher-search-row";
+  searchRow.className = "tab-flow-search-row";
 
   // Search wrapper and box
   const searchWrap = document.createElement("div");
-  searchWrap.className = "tab-switcher-search-wrap";
+  searchWrap.className = "tab-flow-search-wrap";
 
   const searchBox = document.createElement("input");
   searchBox.type = "text";
-  searchBox.className = "tab-switcher-search";
+  searchBox.className = "tab-flow-search";
   searchBox.placeholder = "Search tabs by title or URL...";
   searchBox.autocomplete = "off";
 
-  // Logo icon instead of search icon (Tab Switcher logo)
+  // Logo icon instead of search icon (Tab Flow logo)
   const searchIcon = document.createElement("div");
   searchIcon.className = "search-icon";
   searchIcon.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -257,14 +257,14 @@ export function createOverlay() {
 
   // Section header with view toggle
   const sectionHeader = document.createElement("div");
-  sectionHeader.className = "tab-switcher-section-header";
+  sectionHeader.className = "tab-flow-section-header";
 
   const sectionTitle = document.createElement("span");
-  sectionTitle.className = "tab-switcher-section-title";
+  sectionTitle.className = "tab-flow-section-title";
   sectionTitle.textContent = "Opened Tabs";
 
   const viewToggle = document.createElement("div");
-  viewToggle.className = "tab-switcher-view-toggle";
+  viewToggle.className = "tab-flow-view-toggle";
 
   // Use globally cached view mode (loaded from chrome.storage at extension init)
   const currentView = getCachedViewMode();
@@ -305,10 +305,10 @@ export function createOverlay() {
 
   // Grid container with virtual scrolling support
   const grid = document.createElement("div");
-  grid.className = `tab-switcher-grid ${
+  grid.className = `tab-flow-grid ${
     currentView === "list" ? "list-view" : ""
   }`;
-  grid.id = "tab-switcher-grid";
+  grid.id = "tab-flow-grid";
   grid.setAttribute("role", "listbox");
   grid.setAttribute("aria-label", "Open tabs");
   grid.style.transform = "translate3d(0, 0, 0)"; // GPU acceleration
@@ -316,7 +316,7 @@ export function createOverlay() {
 
   // Help text - Raycast-style action bar (centered)
   const helpText = document.createElement("div");
-  helpText.className = "tab-switcher-help";
+  helpText.className = "tab-flow-help";
   helpText.innerHTML = `
       <span><kbd>Alt+Q</kbd> <kbd>↑↓</kbd> Navigate</span>
      <span><kbd>↵</kbd>Switch</span>
@@ -378,7 +378,7 @@ export function createOverlay() {
   );
 }
 
-export function showTabSwitcher(
+export function showTabFlow(
   tabs: Tab[],
   activeTabId: number | null | undefined,
   groups: Group[] = []
@@ -386,7 +386,7 @@ export function showTabSwitcher(
   const startTime = performance.now();
 
   console.log(
-    `[TAB SWITCHER] Opening with ${tabs.length} tabs and ${groups.length} groups`
+    `[Tab Flow] Opening with ${tabs.length} tabs and ${groups.length} groups`
   );
 
   // Capture fullscreen element before showing overlay
@@ -558,3 +558,7 @@ export function showTabSwitcher(
     }
   }, 100);
 }
+
+
+
+

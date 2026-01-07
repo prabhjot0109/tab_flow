@@ -79,7 +79,7 @@ export function blurPageElements() {
       }
     });
   } catch (error) {
-    console.debug("[TAB SWITCHER] Error blurring page elements:", error);
+    console.debug("[Tab Flow] Error blurring page elements:", error);
   }
 }
 
@@ -222,3 +222,7 @@ export function handleGlobalClick(e: MouseEvent) {
     e.preventDefault();
   }
 }
+
+
+
+

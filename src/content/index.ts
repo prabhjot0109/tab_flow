@@ -1,12 +1,12 @@
 import "./utils/messaging.js";
 import { state } from "./state";
-import { showTabSwitcher } from "./ui/overlay";
+import { showTabFlow } from "./ui/overlay";
 import { selectNext } from "./input/keyboard";
 import { enforceSingleSelection } from "./ui/rendering";
 import { closeOverlay } from "./actions";
 
 console.log("═══════════════════════════════════════════════════════");
-console.log("Visual Tab Switcher - Content Script Loaded");
+console.log("Visual Tab Flow - Content Script Loaded");
 console.log("Features: Virtual Scrolling, Event Delegation, GPU Acceleration");
 console.log("Target: <16ms interactions, 60fps, lazy loading");
 console.log("═══════════════════════════════════════════════════════");
@@ -113,7 +113,7 @@ document.addEventListener("visibilitychange", () => {
 });
 
 chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
-  if (request.action === "showTabSwitcher") {
+  if (request.action === "showTabFlow") {
     // If overlay already visible, treat repeated Alt+Q as cycle-next
     if (state.isOverlayVisible) {
       selectNext();
@@ -122,8 +122,12 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
       sendResponse({ success: true, advanced: true });
       return true;
     }
-    showTabSwitcher(request.tabs, request.activeTabId, request.groups);
+    showTabFlow(request.tabs, request.activeTabId, request.groups);
     sendResponse({ success: true });
   }
   return true;
 });
+
+
+
+

@@ -8,7 +8,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        switcher: resolve(__dirname, "src/switcher/index.html"),
+        Flow: resolve(__dirname, "src/flow/index.html"),
       },
     },
   },
@@ -20,3 +20,6 @@ export default defineConfig({
     },
   },
 });
+
+
+

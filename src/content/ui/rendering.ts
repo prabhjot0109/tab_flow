@@ -92,7 +92,7 @@ export function renderTabsStandard(tabs: Tab[]) {
 
   if (tabs.length === 0) {
     const emptyMsg = document.createElement("div");
-    emptyMsg.className = "tab-switcher-empty";
+    emptyMsg.className = "tab-flow-empty";
     emptyMsg.textContent = "No tabs found";
     grid.appendChild(emptyMsg);
     return;
@@ -141,7 +141,7 @@ export function renderTabsVirtual(tabs: Tab[]) {
 
   if (tabs.length === 0) {
     const emptyMsg = document.createElement("div");
-    emptyMsg.className = "tab-switcher-empty";
+    emptyMsg.className = "tab-flow-empty";
     emptyMsg.textContent = "No tabs found";
     grid.appendChild(emptyMsg);
     return;
@@ -458,7 +458,7 @@ export function enforceSingleSelection(scrollIntoView: boolean) {
       });
     }
   } catch (error) {
-    console.error("[TAB SWITCHER] Error enforcing selection:", error);
+    console.error("[Tab Flow] Error enforcing selection:", error);
   }
 }
 
@@ -475,7 +475,7 @@ export function updateSelection() {
     }
     enforceSingleSelection(true);
   } catch (error) {
-    console.error("[TAB SWITCHER] Error in updateSelection:", error);
+    console.error("[Tab Flow] Error in updateSelection:", error);
   }
 }
 
@@ -522,7 +522,7 @@ export function renderHistoryView(historyData: {
   if (!grid) return;
 
   grid.innerHTML = "";
-  grid.className = "tab-switcher-grid search-mode"; // Reuse search-mode for column layout
+  grid.className = "tab-flow-grid search-mode"; // Reuse search-mode for column layout
 
   const container = document.createElement("div");
   container.className = "history-view";
@@ -558,7 +558,7 @@ export function renderHistoryView(historyData: {
     backCol.appendChild(backItemsContainer);
   } else {
     const empty = document.createElement("div");
-    empty.className = "tab-switcher-empty";
+    empty.className = "tab-flow-empty";
     empty.textContent = "No back history";
     empty.style.padding = "20px";
     empty.style.textAlign = "center";
@@ -591,7 +591,7 @@ export function renderHistoryView(historyData: {
     fwdCol.appendChild(fwdItemsContainer);
   } else {
     const empty = document.createElement("div");
-    empty.className = "tab-switcher-empty";
+    empty.className = "tab-flow-empty";
     empty.textContent = "No forward history";
     empty.style.padding = "20px";
     empty.style.textAlign = "center";
@@ -724,3 +724,7 @@ function getGroupColor(colorName: string) {
   };
   return colors[colorName] || colorName;
 }
+
+
+
+

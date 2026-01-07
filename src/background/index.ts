@@ -1,5 +1,5 @@
 // ============================================================================
-// Background Service Worker for Visual Tab Switcher
+// Background Service Worker for Visual Tab Flow
 // ============================================================================
 // PERFORMANCE-OPTIMIZED IMPLEMENTATION (MODULAR)
 // Target: <100ms overlay open, <50MB with 100 tabs, 60fps animations
@@ -23,30 +23,30 @@ const screenshotCache = new LRUCache(
 );
 
 // Track the popup window ID to avoid duplicates
-let switcherPopupWindowId: number | null = null;
+let FlowPopupWindowId: number | null = null;
 
 // ============================================================================
 // POPUP WINDOW FALLBACK (for protected pages)
 // ============================================================================
 
-async function openSwitcherPopup(
+async function openFlowPopup(
   tabsData: any[],
   groupsData: any[],
   activeTabId: number
 ): Promise<void> {
   try {
     // Check if popup already exists and is still open
-    if (switcherPopupWindowId !== null) {
+    if (FlowPopupWindowId !== null) {
       try {
-        const existingWindow = await chrome.windows.get(switcherPopupWindowId);
+        const existingWindow = await chrome.windows.get(FlowPopupWindowId);
         if (existingWindow) {
           // Focus the existing popup
-          await chrome.windows.update(switcherPopupWindowId, { focused: true });
+          await chrome.windows.update(FlowPopupWindowId, { focused: true });
 
           // If the popup is already open, treat repeated command as cycle-next
           // (matches the overlay behavior where repeated Alt+Q advances selection).
           try {
-            chrome.runtime.sendMessage({ action: "switcherPopupCycleNext" });
+            chrome.runtime.sendMessage({ action: "FlowPopupCycleNext" });
           } catch {
             // Ignore messaging errors
           }
@@ -54,13 +54,13 @@ async function openSwitcherPopup(
         }
       } catch {
         // Window no longer exists, proceed to create new one
-        switcherPopupWindowId = null;
+        FlowPopupWindowId = null;
       }
     }
 
     // Store tab data in session storage for the popup to retrieve
     await chrome.storage.session.set({
-      switcherTabData: {
+      FlowTabData: {
         tabs: tabsData,
         groups: groupsData,
         activeTabId: activeTabId,
@@ -88,7 +88,7 @@ async function openSwitcherPopup(
 
     // Create popup window
     const popupWindow = await chrome.windows.create({
-      url: chrome.runtime.getURL("src/switcher/index.html"),
+      url: chrome.runtime.getURL("src/flow/index.html"),
       type: "popup",
       width: popupWidth,
       height: popupHeight,
@@ -98,21 +98,21 @@ async function openSwitcherPopup(
     });
 
     if (popupWindow?.id) {
-      switcherPopupWindowId = popupWindow.id;
+      FlowPopupWindowId = popupWindow.id;
 
       // Listen for window close to reset the ID
       const handleWindowRemoved = (windowId: number) => {
-        if (windowId === switcherPopupWindowId) {
-          switcherPopupWindowId = null;
+        if (windowId === FlowPopupWindowId) {
+          FlowPopupWindowId = null;
           chrome.windows.onRemoved.removeListener(handleWindowRemoved);
         }
       };
       chrome.windows.onRemoved.addListener(handleWindowRemoved);
     }
 
-    console.log("[POPUP] Switcher popup window created");
+    console.log("[POPUP] Flow popup window created");
   } catch (error) {
-    console.error("[POPUP] Failed to create switcher popup:", error);
+    console.error("[POPUP] Failed to create Flow popup:", error);
   }
 }
 
@@ -122,7 +122,7 @@ async function openSwitcherPopup(
 
 async function initialize(): Promise<void> {
   console.log("═══════════════════════════════════════════════════════");
-  console.log("Visual Tab Switcher - Performance Optimized (Modular)");
+  console.log("Visual Tab Flow - Performance Optimized (Modular)");
   console.log("═══════════════════════════════════════════════════════");
   console.log(
     `Cache: Max ${PERF_CONFIG.MAX_CACHED_TABS} tabs, ${(
@@ -307,14 +307,14 @@ if (typeof chrome !== "undefined" && chrome.tabs) {
 
 if (typeof chrome !== "undefined" && chrome.commands) {
   chrome.commands.onCommand.addListener((command) => {
-    if (command === "show-tab-switcher" || command === "cycle-next-tab") {
-      handleShowTabSwitcher();
+    if (command === "show-tab-flow" || command === "cycle-next-tab") {
+      handleShowTabFlow();
     }
   });
 }
 
-// Handle showing the tab switcher - OPTIMIZED FOR <100ms
-async function handleShowTabSwitcher(): Promise<void> {
+// Handle showing the Tab Flow - OPTIMIZED FOR <100ms
+async function handleShowTabFlow(): Promise<void> {
   // Ensure cache and recent order are restored
   if (screenshotCache.ready) await screenshotCache.ready;
   if (!tabTracker.isRecentOrderRestored()) {
@@ -334,9 +334,9 @@ async function handleShowTabSwitcher(): Promise<void> {
         windowId: currentWindow.id,
       });
 
-      const switcherUrl = chrome.runtime.getURL("src/switcher/index.html");
-      if (currentWindow?.type === "popup" && currentActiveTab?.url === switcherUrl) {
-        chrome.runtime.sendMessage({ action: "switcherPopupCycleNext" });
+      const FlowUrl = chrome.runtime.getURL("src/flow/index.html");
+      if (currentWindow?.type === "popup" && currentActiveTab?.url === FlowUrl) {
+        chrome.runtime.sendMessage({ action: "FlowPopupCycleNext" });
         return;
       }
     } catch {
@@ -428,13 +428,13 @@ async function handleShowTabSwitcher(): Promise<void> {
         "[INJECT] Protected page detected, opening popup window fallback..."
       );
       // Open popup window for protected pages
-      await openSwitcherPopup(tabsData, groupsData, activeTab.id);
+      await openFlowPopup(tabsData, groupsData, activeTab.id);
       return;
     }
 
     // Send to content script
     await sendMessageWithRetry(activeTab.id, {
-      action: "showTabSwitcher",
+      action: "showTabFlow",
       tabs: tabsData,
       groups: groupsData,
       activeTabId: activeTab.id,
@@ -444,7 +444,7 @@ async function handleShowTabSwitcher(): Promise<void> {
     const duration = performance.now() - startTime;
     perfMetrics.recordOverlayOpen(duration);
   } catch (error) {
-    console.error("[ERROR] Failed to show tab switcher:", error);
+    console.error("[ERROR] Failed to show Tab Flow:", error);
   }
 }
 
@@ -463,7 +463,7 @@ if (
       sender,
       sendResponse,
       screenshotCache,
-      handleShowTabSwitcher
+      handleShowTabFlow
     );
     return true; // Keep channel open for async response
   });
@@ -476,3 +476,7 @@ if (
 initialize().catch((error) => {
   console.error("[INIT] Failed to initialize:", error);
 });
+
+
+
+

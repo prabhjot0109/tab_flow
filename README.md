@@ -1,4 +1,4 @@
-# <img src="./icons/icon128.png" width="40" height="40" style="vertical-align: bottom; margin-right: 10px;"> Browser Tab Switch
+# <img src="./icons/icon128.png" width="40" height="40" style="vertical-align: bottom; margin-right: 10px;"> Tab Flow
 
 ![Extension Preview](./preview.png)
 
@@ -6,7 +6,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Chrome](https://img.shields.io/badge/platform-Chrome%20%7C%20Edge%20%7C%20Brave-grey.svg)
 
-**A professional, high-performance tab switcher for power users.**
+**A professional, high-performance Tab Flow for power users.**
 Replace the default browser tab cycle with a beautiful, Mac-like "Mission Control" overlay. Visualize your tabs, search instantly, and navigate with speed.
 
 ---
@@ -33,14 +33,14 @@ Replace the default browser tab cycle with a beautiful, Mac-like "Mission Contro
 - **Instant Access**: Opens in **<100ms** thanks to smart pre-caching and service worker optimization.
 - **Fuzzy Search**: Rapidly find tabs by title or URL. Just start typing.
 - **Smart Sorting**: Tabs are automatically sorted by **Recency**, so your last-used tab is always just one click away.
-- **Input Isolation**: Advanced event handling ensures your keystrokes stay within the switcher, preventing accidental input on the underlying page.
+- **Input Isolation**: Advanced event handling ensures your keystrokes stay within the Flow, preventing accidental input on the underlying page.
 - **Virtual Scrolling**: Handles 50+ tabs with smooth 60fps animations.
 
 ### ⌨️ Power User Shortcuts
 
-- **Tab History**: Navigate back/forward in a specific tab's history directly from the switcher using `,`.
+- **Tab History**: Navigate back/forward in a specific tab's history directly from the Flow using `,`.
 - **Restore Closed Tabs**: Quickly find and restore recently closed tabs with `.`.
-- **Web Search**: Start a web search directly from the switcher with `?`.
+- **Web Search**: Start a web search directly from the Flow with `?`.
 - **Keyboard First**: Fully navigable via keyboard, but mouse-friendly too.
 
 ---
@@ -49,14 +49,14 @@ Replace the default browser tab cycle with a beautiful, Mac-like "Mission Contro
 
 | Key                            | Action                                         |
 | :----------------------------- | :--------------------------------------------- |
-| **`Alt` + `Q`**                | **Open Switcher** (Customizable to `Ctrl+Tab`) |
+| **`Alt` + `Q`**                | **Open Flow** (Customizable to `Ctrl+Tab`)     |
 | **`↑`** / **`↓`**              | Navigate between tabs                          |
 | **`Enter`**                    | Switch to selected tab / Toggle group collapse |
 | **`Delete`** / **`Backspace`** | Close selected tab                             |
 | **`,`**                        | View Tab History (Back/Forward navigation)     |
 | **`.`**                        | View Recently Closed Tabs                      |
 | **`?`** (Shift + /)            | Web Search                                     |
-| **`Esc`**                      | Close Switcher                                 |
+| **`Esc`**                      | Close Flow                                     |
 
 > **Pro Tip:** You can map this extension to `Ctrl+Tab` in `chrome://extensions/shortcuts` for a native replacement feel.
 
@@ -68,8 +68,8 @@ Replace the default browser tab cycle with a beautiful, Mac-like "Mission Contro
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/prabhjot0109/tab_switcher_extension.git
-   cd tab_switcher_extension
+   git clone https://github.com/prabhjot0109/tab_flow.git
+   cd tab_flow
    ```
 2. **Install & Build**:
    ```bash
