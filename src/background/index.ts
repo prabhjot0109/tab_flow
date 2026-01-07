@@ -22,6 +22,100 @@ const screenshotCache = new LRUCache(
   PERF_CONFIG.MAX_CACHE_BYTES
 );
 
+// Track the popup window ID to avoid duplicates
+let switcherPopupWindowId: number | null = null;
+
+// ============================================================================
+// POPUP WINDOW FALLBACK (for protected pages)
+// ============================================================================
+
+async function openSwitcherPopup(
+  tabsData: any[],
+  groupsData: any[],
+  activeTabId: number
+): Promise<void> {
+  try {
+    // Check if popup already exists and is still open
+    if (switcherPopupWindowId !== null) {
+      try {
+        const existingWindow = await chrome.windows.get(switcherPopupWindowId);
+        if (existingWindow) {
+          // Focus the existing popup
+          await chrome.windows.update(switcherPopupWindowId, { focused: true });
+
+          // If the popup is already open, treat repeated command as cycle-next
+          // (matches the overlay behavior where repeated Alt+Q advances selection).
+          try {
+            chrome.runtime.sendMessage({ action: "switcherPopupCycleNext" });
+          } catch {
+            // Ignore messaging errors
+          }
+          return;
+        }
+      } catch {
+        // Window no longer exists, proceed to create new one
+        switcherPopupWindowId = null;
+      }
+    }
+
+    // Store tab data in session storage for the popup to retrieve
+    await chrome.storage.session.set({
+      switcherTabData: {
+        tabs: tabsData,
+        groups: groupsData,
+        activeTabId: activeTabId,
+      },
+    });
+
+    // Get the current window to position the popup
+    const currentWindow = await chrome.windows.getCurrent();
+    const popupWidth = 780;
+    const popupHeight = 550;
+
+    // Calculate center position
+    const left =
+      currentWindow.left !== undefined
+        ? Math.round(
+            currentWindow.left + (currentWindow.width! - popupWidth) / 2
+          )
+        : 100;
+    const top =
+      currentWindow.top !== undefined
+        ? Math.round(
+            currentWindow.top + (currentWindow.height! - popupHeight) / 2
+          )
+        : 100;
+
+    // Create popup window
+    const popupWindow = await chrome.windows.create({
+      url: chrome.runtime.getURL("src/switcher/index.html"),
+      type: "popup",
+      width: popupWidth,
+      height: popupHeight,
+      left: left,
+      top: top,
+      focused: true,
+    });
+
+    if (popupWindow?.id) {
+      switcherPopupWindowId = popupWindow.id;
+
+      // Listen for window close to reset the ID
+      const handleWindowRemoved = (windowId: number) => {
+        if (windowId === switcherPopupWindowId) {
+          switcherPopupWindowId = null;
+          chrome.windows.onRemoved.removeListener(handleWindowRemoved);
+        }
+      };
+      chrome.windows.onRemoved.addListener(handleWindowRemoved);
+    }
+
+    console.log("[POPUP] Switcher popup window created");
+  } catch (error) {
+    console.error("[POPUP] Failed to create switcher popup:", error);
+  }
+}
+
 // ============================================================================
 // INITIALIZATION
 // ============================================================================
@@ -230,6 +324,25 @@ async function handleShowTabSwitcher(): Promise<void> {
   const startTime = performance.now();
 
   try {
+    // If the protected-page fallback popup is currently focused, the command
+    // should cycle selection inside that popup (matching the in-page overlay
+    // behavior) instead of attempting to inject into the popup tab.
+    try {
+      const currentWindow = await chrome.windows.getCurrent();
+      const [currentActiveTab] = await chrome.tabs.query({
+        active: true,
+        windowId: currentWindow.id,
+      });
+
+      const switcherUrl = chrome.runtime.getURL("src/switcher/index.html");
+      if (currentWindow?.type === "popup" && currentActiveTab?.url === switcherUrl) {
+        chrome.runtime.sendMessage({ action: "switcherPopupCycleNext" });
+        return;
+      }
+    } catch {
+      // Ignore detection errors and proceed with normal flow
+    }
+
     const currentWindow = await chrome.windows.getCurrent();
     const tabs = await chrome.tabs.query({ windowId: currentWindow.id });
 
@@ -311,9 +424,11 @@ async function handleShowTabSwitcher(): Promise<void> {
     }
 
     if (!screenshot.isTabCapturable(activeTab)) {
-      console.warn(
-        "[INJECT] Cannot open overlay on protected page. Switch to a regular webpage and try again."
+      console.log(
+        "[INJECT] Protected page detected, opening popup window fallback..."
       );
+      // Open popup window for protected pages
+      await openSwitcherPopup(tabsData, groupsData, activeTab.id);
       return;
     }
 

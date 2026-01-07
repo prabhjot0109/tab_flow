@@ -22,7 +22,7 @@
   display: contents !important;
 
   /* CSS Custom Properties - Monochrome Theme (White/Grey/Black) */
-  --bg-overlay: rgba(0, 0, 0, 0.6);
+  --bg-overlay: transparent;
   --bg-surface: #161616;
   --bg-glass: #303030;
   --bg-glass-hover: #333333;
@@ -62,7 +62,7 @@
 @media (prefers-color-scheme: light) {
   :host {
     /* Monochrome Light Theme */
-    --bg-overlay: rgba(0, 0, 0, 0.32);
+    --bg-overlay: transparent;
     --bg-surface: #ffffff;
     --bg-glass: #f5f5f5;
     --bg-glass-hover: #ebebeb;

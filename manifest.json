@@ -61,7 +61,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["_favicon/*"],
+      "resources": ["_favicon/*", "src/switcher/*"],
       "matches": ["<all_urls>"],
       "extension_ids": ["*"]
     }

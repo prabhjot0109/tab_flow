@@ -26,7 +26,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/index.ts-loader-C-HKZYLO.js"
+        "assets/index.ts-loader-DkLoYLoU.js"
       ],
       "matches": [
         "<all_urls>"
@@ -72,7 +72,8 @@
         "<all_urls>"
       ],
       "resources": [
-        "_favicon/*"
+        "_favicon/*",
+        "src/switcher/*"
       ],
       "use_dynamic_url": false
     },
@@ -82,7 +83,7 @@
         "https://*/*"
       ],
       "resources": [
-        "assets/index.ts-Cuv8rAnv.js"
+        "assets/index.ts-am_Ujw7n.js"
       ],
       "use_dynamic_url": false
     }

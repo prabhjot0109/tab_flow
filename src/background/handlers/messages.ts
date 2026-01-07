@@ -28,6 +28,12 @@ export async function handleMessage(
     }
 
     switch (request.action) {
+      case "switcherPopupCycleNext":
+        // Internal message used to control the standalone switcher popup.
+        // The popup page listens for this; background can safely ack it too.
+        sendResponse({ success: true });
+        break;
+
       case "reportMediaPresence":
         if (sender.tab && sender.tab.id) {
           mediaTracker.addMediaTab(sender.tab.id);
@@ -267,6 +273,80 @@ export async function handleMessage(
           }
         } catch (error: any) {
           console.error("[GROUPS] Failed to create group:", error);
+          sendResponse({ success: false, error: error.message });
+        }
+        break;
+
+      case "getTabsForSwitcher":
+        // Used by the popup window fallback to request tab data directly
+        try {
+          const currentWindow = await chrome.windows.getCurrent();
+          const tabs = await chrome.tabs.query({ windowId: currentWindow.id });
+
+          const tabsWithIds = tabs.filter(
+            (tab): tab is chrome.tabs.Tab & { id: number } =>
+              typeof tab.id === "number"
+          );
+
+          // Fetch tab groups
+          let groups: chrome.tabGroups.TabGroup[] = [];
+          if (chrome.tabGroups) {
+            try {
+              groups = await chrome.tabGroups.query({
+                windowId: currentWindow.id,
+              });
+            } catch (e) {
+              console.debug("[GROUPS] Failed to fetch groups:", e);
+            }
+          }
+
+          // Sort by recent access order
+          const sortedTabs = tabTracker.sortTabsByRecent(tabsWithIds);
+
+          // Build tab data with cached screenshots
+          const RECENT_PREVIEW_LIMIT = 8;
+
+          const tabsData = sortedTabs.map((tab, index) => {
+            let screenshotData = null;
+            const isRecent = index < RECENT_PREVIEW_LIMIT;
+
+            if (screenshot.isTabCapturable(tab) && isRecent) {
+              const cached = screenshotCache.get(tab.id);
+              if (cached) {
+                screenshotData = cached;
+              }
+            }
+
+            return {
+              id: tab.id,
+              title: tab.title || "Untitled",
+              url: tab.url,
+              favIconUrl: tab.favIconUrl,
+              screenshot: screenshotData ? screenshotData.data : null,
+              pinned: tab.pinned,
+              index: tab.index,
+              active: tab.active,
+              audible: tab.audible,
+              mutedInfo: tab.mutedInfo,
+              groupId: tab.groupId,
+              hasMedia: mediaTracker.hasMedia(tab.id) || tab.audible,
+            };
+          });
+
+          const groupsData = groups.map((g) => ({
+            id: g.id,
+            title: g.title,
+            color: g.color,
+            collapsed: g.collapsed,
+          }));
+
+          sendResponse({
+            success: true,
+            tabs: tabsData,
+            groups: groupsData,
+          });
+        } catch (error: any) {
+          console.error("[ERROR] Failed to get tabs for switcher:", error);
           sendResponse({ success: false, error: error.message });
         }
         break;

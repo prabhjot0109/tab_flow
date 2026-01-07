@@ -1,0 +1,1 @@
+import"./modulepreload-polyfill-B5Qt9EMX.js";const t=document.getElementById("shortcutsLink");t&&t.addEventListener("click",e=>{e.preventDefault(),chrome.tabs.create({url:"chrome://extensions/shortcuts"})});
