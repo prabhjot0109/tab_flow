@@ -10,19 +10,19 @@
     "name": "modulepreload-polyfill"
   },
   "src/background/index.ts": {
-    "file": "assets/index.ts-dEbvsUNi.js",
+    "file": "assets/index.ts-CmtFglZ-.js",
     "name": "index.ts",
     "src": "src/background/index.ts",
     "isEntry": true
   },
   "src/content/index.ts": {
-    "file": "assets/index.ts-DtJt53bk.js",
+    "file": "assets/index.ts-Nb12xBll.js",
     "name": "index.ts",
     "src": "src/content/index.ts",
     "isEntry": true
   },
   "src/flow/index.html": {
-    "file": "assets/Flow-jP71YrT3.js",
+    "file": "assets/Flow-BgYnk3yz.js",
     "name": "Flow",
     "src": "src/flow/index.html",
     "isEntry": true,
@@ -30,7 +30,7 @@
       "_modulepreload-polyfill-B5Qt9EMX.js"
     ],
     "css": [
-      "assets/Flow-zpErlOf9.css"
+      "assets/Flow-CWYzzgKA.css"
     ]
   },
   "src/options/options.html": {
@@ -46,7 +46,7 @@
     ]
   },
   "src/popup/popup.html": {
-    "file": "assets/popup.html-DA3_J9NE.js",
+    "file": "assets/popup.html-m3oso1DM.js",
     "name": "popup.html",
     "src": "src/popup/popup.html",
     "isEntry": true,
@@ -54,11 +54,11 @@
       "_modulepreload-polyfill-B5Qt9EMX.js"
     ],
     "css": [
-      "assets/popup-BEuiWHpi.css"
+      "assets/popup-Bw23bJvx.css"
     ]
   },
   "src/quick-switch/index.html": {
-    "file": "assets/QuickSwitch-DkL3MqJK.js",
+    "file": "assets/QuickSwitch-CYshesT8.js",
     "name": "QuickSwitch",
     "src": "src/quick-switch/index.html",
     "isEntry": true,
@@ -66,7 +66,7 @@
       "_modulepreload-polyfill-B5Qt9EMX.js"
     ],
     "css": [
-      "assets/QuickSwitch-CsSVmg9o.css"
+      "assets/QuickSwitch-lDGHn3dx.css"
     ]
   }
 }

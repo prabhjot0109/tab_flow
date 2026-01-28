@@ -289,12 +289,12 @@ body {
 /* Tab Grid */
 .tab-flow-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+  gap: 12px;
   overflow-y: auto;
   overflow-x: hidden;
   /* Extra vertical padding to allow space for the "selection lift/scale" without cropping */
-  padding: 12px 12px;
+  padding: 12px 14px;
   flex: 1;
   min-height: 180px;
   scroll-behavior: smooth;
@@ -308,62 +308,6 @@ body {
   gap: 12px;
 }
 
-.tab-flow-grid.list-view .tab-card {
-  width: 100%;
-  height: auto;
-  min-height: 52px;
-  flex-direction: row;
-  align-items: center;
-  padding: 10px 14px;
-  gap: 12px;
-}
-
-.tab-flow-grid.list-view .tab-card:hover {
-  transform: none;
-}
-
-.tab-flow-grid.list-view .tab-card.selected {
-  transform: none !important;
-}
-
-.tab-flow-grid.list-view .tab-thumbnail {
-  flex: 0 0 36px;
-  height: 36px;
-  width: 36px;
-  min-height: 36px;
-  border-radius: var(--radius-sm);
-}
-
-.tab-flow-grid.list-view .tab-info {
-  flex: 1;
-  padding: 0;
-  min-width: 0;
-}
-
-.tab-flow-grid.list-view .tab-title {
-  font-size: 14px;
-}
-
-.tab-flow-grid.list-view .tab-url {
-  padding-left: 0;
-  font-size: 12px;
-}
-
-.tab-flow-grid.list-view .tab-close-btn {
-  position: relative;
-  top: auto;
-  right: auto;
-  opacity: 0;
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-}
-
-.tab-flow-grid.list-view .tab-card:hover .tab-close-btn {
-  opacity: 1;
-}
-
-/* Search mode */
 .tab-flow-grid.search-mode {
   display: flex;
   flex-direction: column;
@@ -371,6 +315,7 @@ body {
   min-height: auto;
 }
 
+.tab-flow-grid.list-view .tab-card,
 .tab-flow-grid.search-mode .tab-card {
   width: 100%;
   height: auto;
@@ -381,14 +326,17 @@ body {
   gap: 12px;
 }
 
+.tab-flow-grid.list-view .tab-card:hover,
 .tab-flow-grid.search-mode .tab-card:hover {
   transform: none;
 }
 
+.tab-flow-grid.list-view .tab-card.selected,
 .tab-flow-grid.search-mode .tab-card.selected {
   transform: none !important;
 }
 
+.tab-flow-grid.list-view .tab-thumbnail,
 .tab-flow-grid.search-mode .tab-thumbnail {
   flex: 0 0 36px;
   height: 36px;
@@ -494,7 +442,7 @@ body {
   position: relative;
   display: flex;
   flex-direction: column;
-  height: 160px;
+  height: 140px;
   transition: all var(--transition-fast);
   box-shadow: none;
 
@@ -529,7 +477,7 @@ body {
 /* Thumbnail */
 .tab-thumbnail {
   flex: 1;
-  min-height: 0;
+  min-height: 80px;
   background: linear-gradient(
     180deg,
     rgba(0, 0, 0, 0.02) 0%,
@@ -705,12 +653,66 @@ body {
 
 /* Web Search Card */
 .tab-card.web-search-card {
-  border: 2px dashed var(--accent-primary);
+  grid-column: 1 / -1 !important;
+  width: 100% !important;
+  height: 54px !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  padding: 0 16px !important;
+  gap: 14px !important;
+  border: 1px solid var(--border-subtle);
   background: linear-gradient(
     135deg,
-    rgba(66, 133, 244, 0.1) 0%,
-    rgba(66, 133, 244, 0.05) 100%
+    rgba(66, 133, 244, 0.08) 0%,
+    rgba(66, 133, 244, 0.04) 100%
   );
+}
+
+.tab-card.web-search-card:hover,
+.tab-card.web-search-card.selected {
+  border-color: #4285f4 !important;
+  background: linear-gradient(
+    135deg,
+    rgba(66, 133, 244, 0.15) 0%,
+    rgba(66, 133, 244, 0.08) 100%
+  );
+}
+
+.tab-card.web-search-card .tab-thumbnail {
+  flex: 0 0 32px !important;
+  height: 32px !important;
+  width: 32px !important;
+  min-height: 32px !important;
+  background: transparent !important;
+  border-radius: var(--radius-sm);
+}
+
+.tab-card.web-search-card .favicon-tile {
+  background: transparent !important;
+}
+
+.tab-card.web-search-card .favicon-large {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+.tab-card.web-search-card .tab-info {
+  flex: 1;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+}
+
+.tab-card.web-search-card .tab-title {
+  font-size: 14px !important;
+  margin: 0 !important;
+}
+
+.tab-card.web-search-card .tab-url {
+  font-size: 11px !important;
+  padding-left: 0 !important;
+  margin-top: 1px !important;
 }
 
 .tab-card.web-search-card:hover,
@@ -727,75 +729,54 @@ body {
   font-size: 24px;
 }
 
-/* Search Mode - Column/Row Layout (for web search and filtered results) */
+/* Search Mode - Match grid layout for preview screenshots */
 .tab-flow-grid.search-mode {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 0 0 auto;
-  min-height: auto;
-  max-height: none;
-  overflow: visible;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+  gap: 12px;
+  flex: 1;
+  min-height: 180px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 12px 14px;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
 }
 
 .tab-flow-grid.search-mode .tab-card {
-  width: 100%;
-  height: auto;
-  min-height: 52px;
-  flex-direction: row;
-  align-items: center;
-  padding: 10px 14px;
-  gap: 12px;
-  border-radius: var(--radius-md);
-  box-shadow: none;
-}
-
-.tab-flow-grid.search-mode .tab-card:hover {
-  transform: none;
-}
-
-.tab-flow-grid.search-mode .tab-card.selected {
-  transform: none !important;
+  width: auto;
+  height: 140px;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  gap: 0;
 }
 
 .tab-flow-grid.search-mode .tab-thumbnail {
-  flex: 0 0 36px;
-  height: 36px;
-  width: 36px;
-  min-height: 36px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-glass);
-}
-
-.tab-flow-grid.search-mode .favicon-tile {
-  width: 36px;
-  height: 36px;
-}
-
-.tab-flow-grid.search-mode .favicon-large {
-  width: 24px;
-  height: 24px;
+  flex: 1;
+  min-height: 80px;
+  width: auto;
+  height: auto;
+  border-radius: 0;
 }
 
 .tab-flow-grid.search-mode .tab-info {
-  flex: 1;
-  padding: 0;
-  min-width: 0;
+  padding: 12px 14px;
 }
 
 .tab-flow-grid.search-mode .tab-title {
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .tab-flow-grid.search-mode .tab-url {
-  padding-left: 0;
-  font-size: 12px;
+  padding-left: 26px;
+  font-size: 11px;
 }
 
 .tab-flow-grid.search-mode .tab-close-btn {
-  position: relative;
-  top: auto;
-  right: auto;
+  position: absolute;
+  top: 10px;
+  right: 10px;
   opacity: 0;
   width: 28px;
   height: 28px;
@@ -1005,9 +986,9 @@ body {
   }
 
   .tab-flow-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 8px;
-    padding: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+    gap: 12px;
+    padding: 10px 14px;
   }
 
   .tab-card {

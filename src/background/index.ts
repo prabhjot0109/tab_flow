@@ -26,7 +26,7 @@ const log = (...args: unknown[]) => {
 
 const screenshotCache = new LRUCache(
   PERF_CONFIG.MAX_CACHED_TABS,
-  PERF_CONFIG.MAX_CACHE_BYTES
+  PERF_CONFIG.MAX_CACHE_BYTES,
 );
 
 // Track the popup window ID to avoid duplicates
@@ -39,7 +39,7 @@ let FlowPopupWindowId: number | null = null;
 async function openFlowPopup(
   tabsData: any[],
   groupsData: any[],
-  activeTabId: number
+  activeTabId: number,
 ): Promise<void> {
   try {
     // Check if popup already exists and is still open
@@ -78,19 +78,19 @@ async function openFlowPopup(
     // Get the current window to position the popup
     const currentWindow = await chrome.windows.getCurrent();
     const popupWidth = 750;
-    const popupHeight = 500;
+    const popupHeight = 560;
 
     // Calculate center position
     const left =
       currentWindow.left !== undefined
         ? Math.round(
-            currentWindow.left + (currentWindow.width! - popupWidth) / 2
+            currentWindow.left + (currentWindow.width! - popupWidth) / 2,
           )
         : 100;
     const top =
       currentWindow.top !== undefined
         ? Math.round(
-            currentWindow.top + (currentWindow.height! - popupHeight) / 2
+            currentWindow.top + (currentWindow.height! - popupHeight) / 2,
           )
         : 100;
 
@@ -129,14 +129,14 @@ let QuickSwitchPopupWindowId: number | null = null;
 
 async function openQuickSwitchPopup(
   tabsData: any[],
-  activeTabId: number
+  activeTabId: number,
 ): Promise<void> {
   try {
     // Check if popup already exists and is still open
     if (QuickSwitchPopupWindowId !== null) {
       try {
         const existingWindow = await chrome.windows.get(
-          QuickSwitchPopupWindowId
+          QuickSwitchPopupWindowId,
         );
         if (existingWindow) {
           // Focus the existing popup
@@ -170,19 +170,19 @@ async function openQuickSwitchPopup(
     // Get the current window to position the popup
     const currentWindow = await chrome.windows.getCurrent();
     const popupWidth = 750;
-    const popupHeight = 500;
+    const popupHeight = 560;
 
     // Calculate center position
     const left =
       currentWindow.left !== undefined
         ? Math.round(
-            currentWindow.left + (currentWindow.width! - popupWidth) / 2
+            currentWindow.left + (currentWindow.width! - popupWidth) / 2,
           )
         : 100;
     const top =
       currentWindow.top !== undefined
         ? Math.round(
-            currentWindow.top + (currentWindow.height! - popupHeight) / 2
+            currentWindow.top + (currentWindow.height! - popupHeight) / 2,
           )
         : 100;
 
@@ -229,11 +229,9 @@ async function initialize(): Promise<void> {
       PERF_CONFIG.MAX_CACHE_BYTES /
       1024 /
       1024
-    ).toFixed(2)}MB`
+    ).toFixed(2)}MB`,
   );
-  log(
-    `Rate Limit: ${PERF_CONFIG.MAX_CAPTURES_PER_SECOND} captures/sec`
-  );
+  log(`Rate Limit: ${PERF_CONFIG.MAX_CAPTURES_PER_SECOND} captures/sec`);
   log(`Target: <100ms overlay open, <50MB memory, 60fps`);
   log("═══════════════════════════════════════════════════════");
 
@@ -306,9 +304,7 @@ async function loadCacheSettings(): Promise<void> {
 
     await screenshotCache.ready;
     screenshotCache.resize(maxTabs, Math.round(maxMB * 1024 * 1024));
-    log(
-      `[CACHE] Limits set to ${maxTabs} tabs, ${Math.round(maxMB)}MB total`
-    );
+    log(`[CACHE] Limits set to ${maxTabs} tabs, ${Math.round(maxMB)}MB total`);
   } catch (error) {
     console.warn("[CACHE] Failed to load cache settings:", error);
   }
@@ -337,7 +333,7 @@ async function handleIdleCheck(): Promise<void> {
 
     if (Date.now() - startTime > idleThreshold) {
       console.debug(
-        `[IDLE] Tab ${previousActiveTabId} idle > 5m, refreshing screenshot`
+        `[IDLE] Tab ${previousActiveTabId} idle > 5m, refreshing screenshot`,
       );
       tabTracker.resetActiveTabStartTime();
       screenshot.queueCapture(previousActiveTabId, screenshotCache, true);
@@ -376,7 +372,7 @@ if (typeof chrome !== "undefined" && chrome.tabs) {
       } catch (e) {
         console.debug("[TAB] Error in onActivated:", e);
       }
-    }
+    },
   );
 
   // Listen for tab updates
@@ -384,7 +380,7 @@ if (typeof chrome !== "undefined" && chrome.tabs) {
     (
       tabId: number,
       changeInfo: chrome.tabs.OnUpdatedInfo,
-      tab: chrome.tabs.Tab
+      tab: chrome.tabs.Tab,
     ) => {
       try {
         // Track audible state changes
@@ -401,7 +397,7 @@ if (typeof chrome !== "undefined" && chrome.tabs) {
       } catch (e) {
         console.debug("[TAB] Error in onUpdated:", e);
       }
-    }
+    },
   );
 
   // Track when tabs are created
@@ -482,7 +478,7 @@ async function handleShowTabFlow(): Promise<void> {
 
     const tabsWithIds = tabs.filter(
       (tab): tab is chrome.tabs.Tab & { id: number } =>
-        typeof tab.id === "number"
+        typeof tab.id === "number",
     );
 
     // Fetch tab groups
@@ -515,10 +511,10 @@ async function handleShowTabFlow(): Promise<void> {
       const isRecent = index < RECENT_PREVIEW_LIMIT;
 
       if (screenshot.isTabCapturable(tab) && isRecent) {
-          const cached = screenshotCache.getIfFresh(
-            tab.id,
-            PERF_CONFIG.SCREENSHOT_CACHE_DURATION
-          );
+        const cached = screenshotCache.getIfFresh(
+          tab.id,
+          PERF_CONFIG.SCREENSHOT_CACHE_DURATION,
+        );
         if (cached) {
           screenshotData = cached;
           perfMetrics.cacheHits++;
@@ -563,7 +559,7 @@ async function handleShowTabFlow(): Promise<void> {
 
     if (!screenshot.isTabCapturable(activeTab)) {
       console.log(
-        "[INJECT] Protected page detected, opening popup window fallback..."
+        "[INJECT] Protected page detected, opening popup window fallback...",
       );
       // Open popup window for protected pages
       await openFlowPopup(tabsData, groupsData, activeTab.id);
@@ -584,7 +580,7 @@ async function handleShowTabFlow(): Promise<void> {
 
     if (!delivered) {
       console.warn(
-        "[INJECT] Content script unavailable. Overlay could not be shown."
+        "[INJECT] Content script unavailable. Overlay could not be shown.",
       );
       return;
     }
@@ -656,7 +652,7 @@ async function handleQuickSwitch(): Promise<void> {
 
     const tabsWithIds = tabs.filter(
       (tab): tab is chrome.tabs.Tab & { id: number } =>
-        typeof tab.id === "number"
+        typeof tab.id === "number",
     );
 
     // Sort by recent access order
@@ -708,7 +704,7 @@ async function handleQuickSwitch(): Promise<void> {
 
     if (!delivered) {
       console.warn(
-        "[INJECT] Content script unavailable. Overlay could not be shown."
+        "[INJECT] Content script unavailable. Overlay could not be shown.",
       );
       return;
     }
@@ -734,7 +730,7 @@ if (
       sender,
       sendResponse,
       screenshotCache,
-      handleShowTabFlow
+      handleShowTabFlow,
     );
     return true; // Keep channel open for async response
   });

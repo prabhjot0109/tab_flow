@@ -41,8 +41,13 @@
   box-sizing: border-box;
 }
 
+html {
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
 body {
-  width: 320px;
+  width: 360px;
   padding: 20px;
   font-family: "Google Sans", "Segoe UI", system-ui, sans-serif;
   background: var(--bg);
@@ -51,6 +56,9 @@ body {
   text-align: center;
   outline: 1px solid var(--border);
   outline-offset: -1px;
+  border-radius: var(--radius-xl);
+  height: 620px;
+  overflow: hidden;
 }
 
 .header {
@@ -58,7 +66,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .logo {
@@ -68,7 +76,7 @@ body {
 }
 
 h1 {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 600;
   letter-spacing: -0.01em;
 }
@@ -105,17 +113,17 @@ h1 {
 }
 
 .tagline.secondary {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .shortcut-hero.secondary {
   margin-top: 8px;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
   font-size: 16px;
 }
 
 .hero-key.small {
-  padding: 4px 10px;
+  padding: 6px 10px;
   font-size: 14px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
@@ -132,7 +140,7 @@ h1 {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   text-align: left;
 }
 
@@ -169,18 +177,35 @@ kbd {
 }
 
 .footer {
-  margin-top: 24px;
+  margin-top: 12px;
   font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
 }
 
-.footer a {
-  color: var(--muted);
-  text-decoration: none;
-  border-bottom: 1px dotted var(--muted);
-  transition: color 0.2s;
+.settings-btn {
+  border: 1px solid var(--border);
+  background: var(--surface-container);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s,
+    background 0.2s;
 }
 
-.footer a:hover {
+.settings-btn:hover {
   color: var(--text);
-  border-bottom-style: solid;
+  border-color: var(--border-glow);
+  background: var(--card);
+}
+
+.settings-btn:focus-visible {
+  outline: 2px solid var(--accent-container);
+  outline-offset: 2px;
 }

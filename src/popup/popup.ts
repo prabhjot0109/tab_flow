@@ -6,6 +6,14 @@ if (shortcutsLink) {
   });
 }
 
+const optionsLink = document.getElementById("optionsLink");
+if (optionsLink) {
+  optionsLink.addEventListener("click", (e) => {
+    e.preventDefault();
+    chrome.runtime.openOptionsPage();
+  });
+}
+
 
 
 
