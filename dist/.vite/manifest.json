@@ -1,32 +1,28 @@
 {
   "../../../@crx/manifest": {
-    "file": "assets/crx-manifest.js-62TsIryn.js",
+    "file": "assets/crx-manifest.js-BgXUKrG0.js",
     "name": "crx-manifest.js",
     "src": "../../../@crx/manifest",
     "isEntry": true
-  },
-  "_index.ts-loader-BAW9-2Vk.js": {
-    "file": "assets/index.ts-loader-BAW9-2Vk.js",
-    "src": "_index.ts-loader-BAW9-2Vk.js"
   },
   "_modulepreload-polyfill-B5Qt9EMX.js": {
     "file": "assets/modulepreload-polyfill-B5Qt9EMX.js",
     "name": "modulepreload-polyfill"
   },
   "src/background/index.ts": {
-    "file": "assets/index.ts-DykWceKz.js",
+    "file": "assets/index.ts-DzAUW80L.js",
     "name": "index.ts",
     "src": "src/background/index.ts",
     "isEntry": true
   },
   "src/content/index.ts": {
-    "file": "assets/index.ts-JX1eHXPm.js",
+    "file": "assets/index.ts-CI2euI8W.js",
     "name": "index.ts",
     "src": "src/content/index.ts",
     "isEntry": true
   },
   "src/flow/index.html": {
-    "file": "assets/Flow-DtikUBTz.js",
+    "file": "assets/Flow-NLChxNZM.js",
     "name": "Flow",
     "src": "src/flow/index.html",
     "isEntry": true,
@@ -50,7 +46,7 @@
     ]
   },
   "src/quick-switch/index.html": {
-    "file": "assets/QuickSwitch-Dwrk0qLI.js",
+    "file": "assets/QuickSwitch-JX20480v.js",
     "name": "QuickSwitch",
     "src": "src/quick-switch/index.html",
     "isEntry": true,

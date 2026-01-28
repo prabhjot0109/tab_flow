@@ -8,6 +8,13 @@ import {
   closeTab,
 } from "../actions";
 
+const DEBUG_LOGGING = false;
+const log = (...args: unknown[]) => {
+  if (DEBUG_LOGGING) {
+    console.log(...args);
+  }
+};
+
 const VIRTUAL_RENDER_THRESHOLD = 50;
 
 function isListLayout(): boolean {
@@ -134,9 +141,7 @@ export function renderTabsStandard(tabs: Tab[]) {
   enforceSingleSelection(false);
 
   const duration = performance.now() - startTime;
-  console.log(
-    `[PERF] Rendered ${tabs.length} tabs in ${duration.toFixed(2)}ms`
-  );
+  log(`[PERF] Rendered ${tabs.length} tabs in ${duration.toFixed(2)}ms`);
 }
 
 // ============================================================================
@@ -203,7 +208,7 @@ export function renderTabsVirtual(tabs: Tab[]) {
   enforceSingleSelection(false);
 
   const duration = performance.now() - startTime;
-  console.log(
+  log(
     `[PERF] Virtual rendered ${endIndex - startIndex} of ${
       tabs.length
     } tabs in ${duration.toFixed(2)}ms`
@@ -526,7 +531,9 @@ export function setupIntersectionObserver() {
   if (!grid) return;
 
   const images = grid.querySelectorAll("img[data-src]");
-  images.forEach((img) => observer.observe(img));
+  images.forEach((img) => {
+    observer.observe(img);
+  });
 }
 
 // History Views

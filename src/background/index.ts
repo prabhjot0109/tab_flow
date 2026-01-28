@@ -13,6 +13,13 @@ import * as tabTracker from "./services/tab-tracker";
 import * as screenshot from "./services/screenshot";
 import { handleMessage, sendMessageWithRetry } from "./handlers/messages";
 
+const DEBUG_LOGGING = false;
+const log = (...args: unknown[]) => {
+  if (DEBUG_LOGGING) {
+    console.log(...args);
+  }
+};
+
 // ============================================================================
 // GLOBAL STATE
 // ============================================================================
@@ -44,12 +51,12 @@ async function openFlowPopup(
           await chrome.windows.update(FlowPopupWindowId, { focused: true });
 
           // If the popup is already open, treat repeated command as cycle-next
-          console.log("[POPUP] Sending FlowPopupCycleNext message");
+          log("[POPUP] Sending FlowPopupCycleNext message");
           try {
             // Send message to all extension contexts (popup will receive it)
             chrome.runtime.sendMessage({ action: "FlowPopupCycleNext" });
           } catch (err) {
-            console.log("[POPUP] Message send error:", err);
+            log("[POPUP] Message send error:", err);
           }
           return;
         }
@@ -111,7 +118,7 @@ async function openFlowPopup(
       chrome.windows.onRemoved.addListener(handleWindowRemoved);
     }
 
-    console.log("[POPUP] Flow popup window created");
+    log("[POPUP] Flow popup window created");
   } catch (error) {
     console.error("[POPUP] Failed to create Flow popup:", error);
   }
@@ -138,13 +145,11 @@ async function openQuickSwitchPopup(
           });
 
           // If the popup is already open, treat repeated command as cycle-next
-          console.log(
-            "[QUICK SWITCH] Sending QuickSwitchPopupCycleNext message"
-          );
+          log("[QUICK SWITCH] Sending QuickSwitchPopupCycleNext message");
           try {
             chrome.runtime.sendMessage({ action: "QuickSwitchPopupCycleNext" });
           } catch (err) {
-            console.log("[QUICK SWITCH] Message send error:", err);
+            log("[QUICK SWITCH] Message send error:", err);
           }
           return;
         }
@@ -205,7 +210,7 @@ async function openQuickSwitchPopup(
       chrome.windows.onRemoved.addListener(handleWindowRemoved);
     }
 
-    console.log("[POPUP] Quick Switch popup window created");
+    log("[POPUP] Quick Switch popup window created");
   } catch (error) {
     console.error("[POPUP] Failed to create Quick Switch popup:", error);
   }
@@ -216,21 +221,21 @@ async function openQuickSwitchPopup(
 // ============================================================================
 
 async function initialize(): Promise<void> {
-  console.log("═══════════════════════════════════════════════════════");
-  console.log("Visual Tab Flow - Performance Optimized (Modular)");
-  console.log("═══════════════════════════════════════════════════════");
-  console.log(
+  log("═══════════════════════════════════════════════════════");
+  log("Visual Tab Flow - Performance Optimized (Modular)");
+  log("═══════════════════════════════════════════════════════");
+  log(
     `Cache: Max ${PERF_CONFIG.MAX_CACHED_TABS} tabs, ${(
       PERF_CONFIG.MAX_CACHE_BYTES /
       1024 /
       1024
     ).toFixed(2)}MB`
   );
-  console.log(
+  log(
     `Rate Limit: ${PERF_CONFIG.MAX_CAPTURES_PER_SECOND} captures/sec`
   );
-  console.log(`Target: <100ms overlay open, <50MB memory, 60fps`);
-  console.log("═══════════════════════════════════════════════════════");
+  log(`Target: <100ms overlay open, <50MB memory, 60fps`);
+  log("═══════════════════════════════════════════════════════");
 
   // Load persisted data
   await mediaTracker.loadTabsWithMedia();
@@ -277,7 +282,7 @@ async function setupAlarms(): Promise<void> {
     });
   }
 
-  console.log("[ALARMS] Periodic alarms set up successfully");
+  log("[ALARMS] Periodic alarms set up successfully");
 }
 
 // Alarm listener
@@ -481,7 +486,10 @@ async function handleShowTabFlow(): Promise<void> {
       const isRecent = index < RECENT_PREVIEW_LIMIT;
 
       if (screenshot.isTabCapturable(tab) && isRecent) {
-        const cached = screenshotCache.get(tab.id);
+          const cached = screenshotCache.getIfFresh(
+            tab.id,
+            PERF_CONFIG.SCREENSHOT_CACHE_DURATION
+          );
         if (cached) {
           screenshotData = cached;
           perfMetrics.cacheHits++;

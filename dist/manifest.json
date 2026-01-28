@@ -18,25 +18,13 @@
     "favicon",
     "alarms"
   ],
-  "host_permissions": [
+  "optional_host_permissions": [
     "<all_urls>"
   ],
   "background": {
     "service_worker": "service-worker-loader.js",
     "type": "module"
   },
-  "content_scripts": [
-    {
-      "js": [
-        "assets/index.ts-loader-BAW9-2Vk.js"
-      ],
-      "matches": [
-        "<all_urls>"
-      ],
-      "run_at": "document_idle",
-      "all_frames": false
-    }
-  ],
   "commands": {
     "quick-switch": {
       "suggested_key": {
@@ -84,8 +72,7 @@
         "<all_urls>"
       ],
       "resources": [
-        "_favicon/*",
-        "src/flow/*"
+        "_favicon/*"
       ],
       "use_dynamic_url": false
     },
@@ -95,7 +82,7 @@
         "https://*/*"
       ],
       "resources": [
-        "assets/index.ts-JX1eHXPm.js"
+        "assets/index.ts-CI2euI8W.js"
       ],
       "use_dynamic_url": false
     }

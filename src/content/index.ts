@@ -5,11 +5,18 @@ import { selectNext, selectNextQuickSwitch } from "./input/keyboard";
 import { enforceSingleSelection } from "./ui/rendering";
 import { closeOverlay } from "./actions";
 
-console.log("═══════════════════════════════════════════════════════");
-console.log("Visual Tab Flow - Content Script Loaded");
-console.log("Features: Virtual Scrolling, Event Delegation, GPU Acceleration");
-console.log("Target: <16ms interactions, 60fps, lazy loading");
-console.log("═══════════════════════════════════════════════════════");
+const DEBUG_LOGGING = false;
+const log = (...args: unknown[]) => {
+  if (DEBUG_LOGGING) {
+    console.log(...args);
+  }
+};
+
+log("═══════════════════════════════════════════════════════");
+log("Visual Tab Flow - Content Script Loaded");
+log("Features: Virtual Scrolling, Event Delegation, GPU Acceleration");
+log("Target: <16ms interactions, 60fps, lazy loading");
+log("═══════════════════════════════════════════════════════");
 
 // Media detection to report to background
 function detectMedia() {
@@ -58,42 +65,20 @@ function setupMediaEventListeners() {
 
 setupMediaEventListeners();
 
-// Check on load
-if (document.readyState === "complete") {
-  detectMedia();
-} else {
-  window.addEventListener("load", detectMedia);
+function scheduleInitialMediaDetection() {
+  const schedule = () => detectMedia();
+  if ("requestIdleCallback" in window) {
+    (window as any).requestIdleCallback(schedule, { timeout: 2000 });
+  } else {
+    setTimeout(schedule, 1000);
+  }
 }
 
-// Throttled media detection
-let mediaCheckTimeout: ReturnType<typeof setTimeout> | null = null;
-
-// Also check when elements are added
-export const mediaObserver = new MutationObserver((mutations) => {
-  // 1. Quick check: did we actually add a video/audio tag?
-  const hasPotentialMedia = mutations.some((m) =>
-    Array.from(m.addedNodes).some(
-      (n) =>
-        n.nodeName === "VIDEO" ||
-        n.nodeName === "AUDIO" ||
-        (n instanceof HTMLElement && n.querySelector("video, audio"))
-    )
-  );
-
-  if (hasPotentialMedia) {
-    if (mediaCheckTimeout) return; // Already scheduled
-
-    mediaCheckTimeout = setTimeout(() => {
-      detectMedia();
-      mediaCheckTimeout = null;
-    }, 2000); // Only check max once every 2 seconds
-  }
-});
-
-try {
-  mediaObserver.observe(document.body, { childList: true, subtree: true });
-} catch (e) {
-  // Ignore if body not ready
+// Check on load (deferred for lower overhead)
+if (document.readyState === "complete") {
+  scheduleInitialMediaDetection();
+} else {
+  window.addEventListener("load", scheduleInitialMediaDetection, { once: true });
 }
 
 // ============================================================================

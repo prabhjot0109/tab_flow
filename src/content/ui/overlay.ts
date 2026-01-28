@@ -22,6 +22,13 @@ import {
 } from "./rendering";
 import * as focus from "../input/focus";
 
+const DEBUG_LOGGING = false;
+const log = (...args: unknown[]) => {
+  if (DEBUG_LOGGING) {
+    console.log(...args);
+  }
+};
+
 // ============================================================================
 // GLOBAL VIEW MODE (persisted via chrome.storage.local, applies across all sites)
 // ============================================================================
@@ -475,7 +482,7 @@ export function showTabFlow(
 
   // Determine rendering strategy based on tab count
   if (shouldUseVirtualRendering(state.filteredTabs.length)) {
-    console.log(
+    log(
       "[PERF] Using virtual scrolling for",
       state.filteredTabs.length,
       "tabs"

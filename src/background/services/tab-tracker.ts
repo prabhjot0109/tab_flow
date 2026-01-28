@@ -130,6 +130,11 @@ export async function restoreRecentOrder(): Promise<void> {
 // Sort tabs by recent usage (most recently accessed first)
 // Uses Chrome's lastAccessed timestamp as primary sort, falls back to our tracking
 export function sortTabsByRecent<T extends chrome.tabs.Tab>(tabs: T[]): T[] {
+  const recentIndexMap = new Map<number, number>();
+  recentTabOrder.forEach((id, index) => {
+    recentIndexMap.set(id, index);
+  });
+
   return [...tabs].sort((a, b) => {
     // Primary: Use Chrome's lastAccessed timestamp if available (most reliable)
     const aLastAccessed = (a as any).lastAccessed || 0;
@@ -143,9 +148,9 @@ export function sortTabsByRecent<T extends chrome.tabs.Tab>(tabs: T[]): T[] {
 
     // Fallback: Use our tracked recent order
     const aRecentIndex =
-      typeof a.id === "number" ? recentTabOrder.indexOf(a.id) : -1;
+      typeof a.id === "number" ? recentIndexMap.get(a.id) ?? -1 : -1;
     const bRecentIndex =
-      typeof b.id === "number" ? recentTabOrder.indexOf(b.id) : -1;
+      typeof b.id === "number" ? recentIndexMap.get(b.id) ?? -1 : -1;
 
     // Both in recent order - sort by recency (lower index = more recent)
     if (aRecentIndex !== -1 && bRecentIndex !== -1) {

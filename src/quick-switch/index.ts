@@ -27,6 +27,13 @@ interface TabData {
   activeTabId: number;
 }
 
+const DEBUG_LOGGING = false;
+const log = (...args: unknown[]) => {
+  if (DEBUG_LOGGING) {
+    console.log(...args);
+  }
+};
+
 // State
 let tabs: Tab[] = [];
 let selectedIndex = 0;
@@ -42,7 +49,7 @@ let listViewBtn: HTMLButtonElement;
 // ============================================================================
 
 async function initialize() {
-  console.log("[QUICK SWITCH POPUP] Initializing...");
+  log("[QUICK SWITCH POPUP] Initializing...");
 
   // Get DOM elements
   tabGrid = document.getElementById("tab-grid")!;
@@ -144,9 +151,9 @@ function setupEventListeners() {
   // Listen for cycle-next message from background
   if (chrome?.runtime?.onMessage) {
     chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
-      console.log("[QUICK SWITCH POPUP] Received message:", request?.action);
+      log("[QUICK SWITCH POPUP] Received message:", request?.action);
       if (request?.action === "QuickSwitchPopupCycleNext") {
-        console.log("[QUICK SWITCH POPUP] Cycling to next tab");
+        log("[QUICK SWITCH POPUP] Cycling to next tab");
         selectNext();
         sendResponse?.({ success: true });
         return true;
@@ -157,10 +164,10 @@ function setupEventListeners() {
 }
 
 function handleKeyDown(e: KeyboardEvent) {
-  console.log("[QUICK SWITCH POPUP] Key pressed:", e.key, "Alt:", e.altKey);
+  log("[QUICK SWITCH POPUP] Key pressed:", e.key, "Alt:", e.altKey);
   // Handle Alt+Q to cycle through tabs
   if ((e.key === "q" || e.key === "Q") && e.altKey) {
-    console.log("[QUICK SWITCH POPUP] Alt+Q detected, cycling");
+    log("[QUICK SWITCH POPUP] Alt+Q detected, cycling");
     e.preventDefault();
     e.stopPropagation();
     selectNext();

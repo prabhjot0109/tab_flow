@@ -58,6 +58,10 @@ export function queueCapture(
   screenshotCache: LRUCache,
   priority = false
 ): void {
+  if (screenshotCache.isFresh(tabId, PERF_CONFIG.SCREENSHOT_CACHE_DURATION)) {
+    return;
+  }
+
   // Check if already in queue or pending
   if (
     captureQueue.some((item) => item.tabId === tabId) ||
@@ -75,6 +79,71 @@ export function queueCapture(
   }
 
   processQueue(screenshotCache);
+}
+
+function getThumbnailTargetSize(width: number, height: number): {
+  width: number;
+  height: number;
+} {
+  const maxWidth = PERF_CONFIG.THUMBNAIL_MAX_WIDTH;
+  const maxHeight = PERF_CONFIG.THUMBNAIL_MAX_HEIGHT;
+  const scale = Math.min(maxWidth / width, maxHeight / height, 1);
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale)),
+  };
+}
+
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  const buffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode(...chunk);
+  }
+  return `data:${blob.type};base64,${btoa(binary)}`;
+}
+
+async function downscaleScreenshot(
+  dataUrl: string,
+  quality: number
+): Promise<string> {
+  if (typeof OffscreenCanvas === "undefined" || typeof createImageBitmap === "undefined") {
+    return dataUrl;
+  }
+
+  try {
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    const bitmap = await createImageBitmap(blob);
+    const target = getThumbnailTargetSize(bitmap.width, bitmap.height);
+
+    if (target.width === bitmap.width && target.height === bitmap.height) {
+      bitmap.close?.();
+      return dataUrl;
+    }
+
+    const canvas = new OffscreenCanvas(target.width, target.height);
+    const ctx = canvas.getContext("2d", { alpha: false });
+    if (!ctx) {
+      bitmap.close?.();
+      return dataUrl;
+    }
+
+    ctx.drawImage(bitmap, 0, 0, target.width, target.height);
+    bitmap.close?.();
+
+    const normalizedQuality = Math.min(1, Math.max(0, quality / 100));
+    const scaledBlob = await canvas.convertToBlob({
+      type: "image/jpeg",
+      quality: normalizedQuality,
+    });
+    return await blobToDataUrl(scaledBlob);
+  } catch {
+    return dataUrl;
+  }
 }
 
 async function processQueue(screenshotCache: LRUCache): Promise<void> {
@@ -119,6 +188,14 @@ export async function captureTabScreenshot(
   forceQuality: string | null = null
 ): Promise<string | null> {
   try {
+    if (!forceQuality) {
+      const cached = screenshotCache.getIfFresh(
+        tabId,
+        PERF_CONFIG.SCREENSHOT_CACHE_DURATION
+      );
+      if (cached) return cached.data;
+    }
+
     const tab = await chrome.tabs.get(tabId);
 
     // Only capture if tab is currently active (visible)
@@ -186,6 +263,8 @@ export async function captureTabScreenshot(
       console.debug(`[CAPTURE] No screenshot data for tab ${tabId}`);
       return null;
     }
+
+    screenshot = await downscaleScreenshot(screenshot, qualitySettings.quality);
 
     const captureTime = performance.now() - startTime;
 

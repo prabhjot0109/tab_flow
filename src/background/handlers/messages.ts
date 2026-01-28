@@ -182,12 +182,15 @@ export async function handleMessage(
 
                 const anyPlaying = media.some((m) => !m.paused && !m.ended);
                 if (anyPlaying) {
-                  media.forEach((m) => m.pause());
+                  for (const m of media) {
+                    m.pause();
+                  }
                   return { success: true, playing: false };
-                } else {
-                  media.forEach((m) => m.play().catch(() => {}));
-                  return { success: true, playing: true };
                 }
+                for (const m of media) {
+                  m.play().catch(() => {});
+                }
+                return { success: true, playing: true };
               },
             });
             if (results && results[0]) {
@@ -317,7 +320,10 @@ export async function handleMessage(
             const isRecent = index < RECENT_PREVIEW_LIMIT;
 
             if (screenshot.isTabCapturable(tab) && isRecent) {
-              const cached = screenshotCache.get(tab.id);
+              const cached = screenshotCache.getIfFresh(
+                tab.id,
+                PERF_CONFIG.SCREENSHOT_CACHE_DURATION
+              );
               if (cached) {
                 screenshotData = cached;
               }
@@ -429,6 +435,93 @@ export async function handleMessage(
   }
 }
 
+function isMissingConnectionError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes("Could not establish connection");
+}
+
+function isProtectedInjectionError(message: string): boolean {
+  return (
+    message.includes("cannot be scripted") ||
+    message.includes("Cannot access a chrome://") ||
+    message.includes("Cannot access a chrome-extension://") ||
+    (message.includes("Cannot access") && message.includes("URL"))
+  );
+}
+
+function isMissingHostPermissionError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes("Extension manifest must request permission") ||
+    message.includes("Cannot access contents of the page") ||
+    message.includes("permission")
+  );
+}
+
+function getOriginPermission(tabUrl: string): string | null {
+  if (!tabUrl.startsWith("http://") && !tabUrl.startsWith("https://")) {
+    return null;
+  }
+  try {
+    const origin = new URL(tabUrl).origin;
+    return `${origin}/*`;
+  } catch {
+    return null;
+  }
+}
+
+async function ensureHostPermissionForTab(tabId: number): Promise<boolean> {
+  const tab = await chrome.tabs.get(tabId).catch(() => null);
+  if (!tab || !tab.url || !screenshot.isTabCapturable(tab)) {
+    return false;
+  }
+
+  const originPermission = getOriginPermission(tab.url);
+  if (!originPermission) return false;
+
+  const hasPermission = await chrome.permissions
+    .contains({ origins: [originPermission] })
+    .catch(() => false);
+  if (hasPermission) return true;
+
+  return chrome.permissions
+    .request({ origins: [originPermission] })
+    .catch(() => false);
+}
+
+async function tryInjectContentScript(tabId: number): Promise<boolean> {
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: [contentScriptPath],
+    });
+    return true;
+  } catch (injectErr: any) {
+    const msg = injectErr && injectErr.message ? injectErr.message : "";
+    if (isProtectedInjectionError(msg)) {
+      console.warn(
+        "[INJECT] Cannot inject on this page (protected URL). Try on a regular webpage."
+      );
+      return false;
+    }
+
+    if (isMissingHostPermissionError(injectErr)) {
+      const granted = await ensureHostPermissionForTab(tabId);
+      if (granted) {
+        await chrome.scripting.executeScript({
+          target: { tabId },
+          files: [contentScriptPath],
+        });
+        return true;
+      }
+      console.warn("[INJECT] Host permission not granted by user.");
+      return false;
+    }
+
+    throw injectErr;
+  }
+}
+
 // Send message with automatic script injection
 export async function sendMessageWithRetry(
   tabId: number,
@@ -438,36 +531,12 @@ export async function sendMessageWithRetry(
   try {
     await chrome.tabs.sendMessage(tabId, message);
   } catch (err: any) {
-    if (
-      retries > 0 &&
-      err.message &&
-      err.message.includes("Could not establish connection")
-    ) {
-      console.log("[INJECT] Content script not ready, injecting...");
+    if (retries > 0 && isMissingConnectionError(err)) {
+      const injected = await tryInjectContentScript(tabId);
+      if (!injected) return;
 
-      try {
-        await chrome.scripting.executeScript({
-          target: { tabId },
-          files: [contentScriptPath],
-        });
-
-        await new Promise((resolve) => setTimeout(resolve, 150));
-        await chrome.tabs.sendMessage(tabId, message);
-      } catch (injectErr: any) {
-        const msg = injectErr && injectErr.message ? injectErr.message : "";
-        const protectedErr =
-          msg.includes("cannot be scripted") ||
-          msg.includes("Cannot access a chrome://") ||
-          msg.includes("Cannot access a chrome-extension://") ||
-          (msg.includes("Cannot access") && msg.includes("URL"));
-        if (protectedErr) {
-          console.warn(
-            "[INJECT] Cannot inject on this page (protected URL). Try on a regular webpage."
-          );
-        } else {
-          throw injectErr;
-        }
-      }
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      await chrome.tabs.sendMessage(tabId, message);
     } else {
       throw err;
     }

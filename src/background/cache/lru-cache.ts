@@ -86,6 +86,24 @@ export class LRUCache {
     return entry;
   }
 
+  // Check if entry is fresh without updating access order
+  isFresh(key: number, maxAgeMs: number): boolean {
+    const entry = this.cache.get(key);
+    if (!entry) return false;
+    return Date.now() - entry.timestamp <= maxAgeMs;
+  }
+
+  // Get item only if it's fresh, otherwise evict
+  getIfFresh(key: number, maxAgeMs: number): CacheEntry | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    if (Date.now() - entry.timestamp > maxAgeMs) {
+      this.delete(key);
+      return null;
+    }
+    return this.get(key);
+  }
+
   // Set item with automatic eviction
   set(key: number, value: string): void {
     const size = this._estimateSize(value);

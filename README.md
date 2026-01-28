@@ -147,8 +147,8 @@ For the legal stuff, check out our [Privacy Policy](./PRIVACY.md).
 
 ## FAQ
 
-**Q: Why does it need access to all websites?**  
-A: To capture tab screenshots and show the overlay on any page you're viewing. We don't read or store your browsing data – just take screenshots for the preview tiles.
+**Q: Why does it request site access?**  
+A: Tab Flow only injects the overlay when you trigger a shortcut. The first time you use it on a site, Chrome will ask to grant access for that site so it can render the overlay and capture a thumbnail. You can deny or revoke access anytime.
 
 **Q: Does it work on Chrome internal pages?**  
 A: Chrome doesn't allow extensions to inject content on `chrome://` pages. On these pages, Tab Flow opens as a popup window instead. Same functionality, different container.

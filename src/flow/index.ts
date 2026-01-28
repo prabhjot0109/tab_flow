@@ -1,6 +1,7 @@
 // ============================================================================
 // Standalone Tab Flow - For Protected Pages (chrome://, new tab, etc.)
 // ============================================================================
+export {};
 // This is a popup window version of the Tab Flow that works on pages
 // where content scripts cannot be injected.
 // ============================================================================
@@ -36,6 +37,13 @@ interface TabData {
   groups: Group[];
   activeTabId: number;
 }
+
+const DEBUG_LOGGING = false;
+const log = (...args: unknown[]) => {
+  if (DEBUG_LOGGING) {
+    console.log(...args);
+  }
+};
 
 // State
 let tabs: Tab[] = [];
@@ -147,7 +155,7 @@ function createMutedSvg(): SVGSVGElement {
 // ============================================================================
 
 async function initialize() {
-  console.log("[FLOW POPUP] Initializing...");
+  log("[FLOW POPUP] Initializing...");
 
   // Get DOM elements
   tabGrid = document.getElementById("tab-flow-grid")!;
@@ -273,9 +281,9 @@ function setupEventListeners() {
   // window is already open (protected-page fallback).
   if (chrome?.runtime?.onMessage) {
     chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
-      console.log("[FLOW POPUP] Received message:", request?.action);
+      log("[FLOW POPUP] Received message:", request?.action);
       if (request?.action === "FlowPopupCycleNext") {
-        console.log("[FLOW POPUP] Cycling to next tab");
+        log("[FLOW POPUP] Cycling to next tab");
         selectNext();
         sendResponse?.({ success: true });
         return true;
