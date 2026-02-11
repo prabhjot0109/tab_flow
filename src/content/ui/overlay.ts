@@ -675,6 +675,8 @@ export function showTabFlow(
 let quickSwitchOverlay: HTMLElement | null = null;
 let quickSwitchGrid: HTMLElement | null = null;
 let cachedQuickSwitchViewMode: "grid" | "list" = "grid"; // Default to grid
+let quickSwitchCards: HTMLElement[] = [];
+let quickSwitchLastSelectedIndex = -1;
 
 // Load quick switch view mode from chrome.storage once on script initialization
 try {
@@ -690,25 +692,20 @@ try {
   // Ignore - use default
 }
 
-/** Sync view mode from chrome.storage and update UI before showing */
-async function syncQuickSwitchViewMode(): Promise<void> {
-  return new Promise((resolve) => {
-    try {
-      chrome.storage.local.get(["QuickSwitchViewMode"], (result) => {
-        if (!chrome.runtime.lastError && result.QuickSwitchViewMode) {
-          const mode = result.QuickSwitchViewMode as "grid" | "list";
-          if (mode === "grid" || mode === "list") {
-            cachedQuickSwitchViewMode = mode;
-          }
-        }
-        // Update UI if overlay exists
-        updateQuickSwitchViewUI();
-        resolve();
-      });
-    } catch {
-      resolve();
+try {
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== "local") return;
+    const updated = changes.QuickSwitchViewMode?.newValue as
+      | "grid"
+      | "list"
+      | undefined;
+    if (updated === "grid" || updated === "list") {
+      cachedQuickSwitchViewMode = updated;
+      updateQuickSwitchViewUI();
     }
   });
+} catch {
+  // Ignore - storage events may be unavailable in some contexts.
 }
 
 /** Update the quick switch UI to reflect current view mode */
@@ -900,6 +897,9 @@ function renderQuickSwitchTabs(tabs: Tab[]) {
 
   const grid = quickSwitchGrid;
   grid.innerHTML = "";
+  quickSwitchCards = [];
+  quickSwitchLastSelectedIndex = -1;
+  const fragment = document.createDocumentFragment();
 
   tabs.forEach((tab, index) => {
     const card = document.createElement("div");
@@ -974,23 +974,49 @@ function renderQuickSwitchTabs(tabs: Tab[]) {
       }
     });
 
-    grid.appendChild(card);
+    fragment.appendChild(card);
+    quickSwitchCards.push(card);
   });
+
+  grid.appendChild(fragment);
+  updateQuickSwitchSelection(true);
 }
 
-export function updateQuickSwitchSelection() {
-  if (!quickSwitchGrid) return;
+function applyQuickSwitchSelection(index: number, selected: boolean) {
+  const card = quickSwitchCards[index];
+  if (!card) return;
+  card.classList.toggle("selected", selected);
+  card.setAttribute("aria-selected", selected ? "true" : "false");
+}
 
-  const cards = quickSwitchGrid.querySelectorAll(".tab-card");
-  cards.forEach((card, index) => {
-    const isSelected = index === state.selectedIndex;
-    card.classList.toggle("selected", isSelected);
-    card.setAttribute("aria-selected", isSelected ? "true" : "false");
+export function updateQuickSwitchSelection(forceRefresh = false) {
+  if (!quickSwitchGrid || quickSwitchCards.length === 0) return;
 
-    if (isSelected) {
-      card.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    }
-  });
+  const selectedIndex = state.selectedIndex;
+  if (selectedIndex < 0 || selectedIndex >= quickSwitchCards.length) return;
+
+  if (forceRefresh) {
+    quickSwitchCards.forEach((card, index) => {
+      const isSelected = index === selectedIndex;
+      card.classList.toggle("selected", isSelected);
+      card.setAttribute("aria-selected", isSelected ? "true" : "false");
+    });
+  } else if (quickSwitchLastSelectedIndex !== selectedIndex) {
+    applyQuickSwitchSelection(quickSwitchLastSelectedIndex, false);
+    applyQuickSwitchSelection(selectedIndex, true);
+  }
+
+  const selectedCard = quickSwitchCards[selectedIndex];
+  selectedCard?.scrollIntoView({ block: "nearest", behavior: "auto" });
+  quickSwitchLastSelectedIndex = selectedIndex;
+}
+
+export function advanceQuickSwitchSelection(step: number) {
+  if (!state.quickSwitchTabs || state.quickSwitchTabs.length === 0) return;
+
+  const total = state.quickSwitchTabs.length;
+  state.selectedIndex = (state.selectedIndex + step + total) % total;
+  updateQuickSwitchSelection();
 }
 
 export function closeQuickSwitch() {
@@ -998,6 +1024,7 @@ export function closeQuickSwitch() {
 
   state.isQuickSwitchVisible = false;
   focus.unlockPageInteraction();
+  quickSwitchLastSelectedIndex = -1;
 
   if (quickSwitchOverlay) {
     quickSwitchOverlay.style.opacity = "0";
@@ -1027,21 +1054,13 @@ function handleQuickSwitchKeyDown(e: KeyboardEvent) {
   // Arrow navigation
   if (e.key === "ArrowDown" || e.key === "ArrowRight") {
     e.preventDefault();
-    state.selectedIndex++;
-    if (state.selectedIndex >= state.quickSwitchTabs.length) {
-      state.selectedIndex = 0;
-    }
-    updateQuickSwitchSelection();
+    advanceQuickSwitchSelection(1);
     return;
   }
 
   if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
     e.preventDefault();
-    state.selectedIndex--;
-    if (state.selectedIndex < 0) {
-      state.selectedIndex = state.quickSwitchTabs.length - 1;
-    }
-    updateQuickSwitchSelection();
+    advanceQuickSwitchSelection(-1);
     return;
   }
 
@@ -1094,8 +1113,8 @@ export async function showQuickSwitch(
     return;
   }
 
-  // Sync view mode from chrome.storage before showing
-  await syncQuickSwitchViewMode();
+  // Apply latest cached view mode immediately (kept in sync via storage events).
+  updateQuickSwitchViewUI();
 
   state.isQuickSwitchVisible = true;
   state.quickSwitchTabs = tabs;

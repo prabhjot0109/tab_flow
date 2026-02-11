@@ -10,13 +10,13 @@
     "name": "modulepreload-polyfill"
   },
   "src/background/index.ts": {
-    "file": "assets/index.ts-Dy6ejfzm.js",
+    "file": "assets/index.ts-Dd50JN7A.js",
     "name": "index.ts",
     "src": "src/background/index.ts",
     "isEntry": true
   },
   "src/content/index.ts": {
-    "file": "assets/index.ts-7W9ASnk2.js",
+    "file": "assets/index.ts-xvLPb8KP.js",
     "name": "index.ts",
     "src": "src/content/index.ts",
     "isEntry": true
@@ -58,7 +58,7 @@
     ]
   },
   "src/quick-switch/index.html": {
-    "file": "assets/QuickSwitch-CNmJjNK_.js",
+    "file": "assets/QuickSwitch-bFWpwWBb.js",
     "name": "QuickSwitch",
     "src": "src/quick-switch/index.html",
     "isEntry": true,

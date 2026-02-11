@@ -1,7 +1,12 @@
 import "./utils/messaging.js";
 import { state } from "./state";
-import { showTabFlow, showQuickSwitch, closeQuickSwitch } from "./ui/overlay";
-import { selectNext, selectNextQuickSwitch } from "./input/keyboard";
+import {
+  showTabFlow,
+  showQuickSwitch,
+  closeQuickSwitch,
+  advanceQuickSwitchSelection,
+} from "./ui/overlay";
+import { selectNext } from "./input/keyboard";
 import { enforceSingleSelection } from "./ui/rendering";
 import { closeOverlay } from "./actions";
 
@@ -114,12 +119,20 @@ chrome.runtime.onMessage.addListener((request, _, sendResponse) => {
     // Quick switch (Alt+Q) - Alt+Tab style without search bar
     if (state.isQuickSwitchVisible) {
       // Cycle to next tab
-      selectNextQuickSwitch();
+      advanceQuickSwitchSelection(1);
       sendResponse({ success: true, advanced: true });
       return true;
     }
     showQuickSwitch(request.tabs, request.activeTabId);
     sendResponse({ success: true });
+  } else if (request.action === "quickSwitchCycleIfOpen") {
+    if (!state.isQuickSwitchVisible) {
+      sendResponse({ success: true, advanced: false });
+      return true;
+    }
+    advanceQuickSwitchSelection(1);
+    sendResponse({ success: true, advanced: true });
+    return true;
   }
   return true;
 });

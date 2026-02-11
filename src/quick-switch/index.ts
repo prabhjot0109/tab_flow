@@ -50,6 +50,8 @@ function getFaviconUrl(url?: string, size = 32): string | null {
 let tabs: Tab[] = [];
 let selectedIndex = 0;
 let viewMode: "grid" | "list" = "grid"; // Default to grid
+let tabCards: HTMLElement[] = [];
+let lastSelectedIndex = -1;
 
 // DOM Elements
 let tabGrid: HTMLElement;
@@ -99,7 +101,6 @@ async function initialize() {
       }
 
       renderTabs();
-      updateSelection();
 
       // Clear the session data after loading
       chrome.storage.session.remove(["QuickSwitchTabData"]);
@@ -137,7 +138,6 @@ async function requestTabsFromBackground() {
       }
 
       renderTabs();
-      updateSelection();
     }
   } catch (e) {
     console.error("[QUICK SWITCH POPUP] Failed to request tabs:", e);
@@ -308,6 +308,9 @@ function updateViewToggle() {
 
 function renderTabs() {
   tabGrid.innerHTML = "";
+  tabCards = [];
+  lastSelectedIndex = -1;
+  const fragment = document.createDocumentFragment();
 
   // Apply view mode class
   tabGrid.classList.toggle("list-view", viewMode === "list");
@@ -376,21 +379,39 @@ function renderTabs() {
     card.appendChild(thumbnail);
     card.appendChild(tabInfo);
 
-    tabGrid.appendChild(card);
+    fragment.appendChild(card);
+    tabCards.push(card);
   });
+
+  tabGrid.appendChild(fragment);
+  updateSelection(true);
 }
 
-function updateSelection() {
-  const cards = tabGrid.querySelectorAll(".tab-card");
-  cards.forEach((card, index) => {
-    const isSelected = index === selectedIndex;
-    card.classList.toggle("selected", isSelected);
-    card.setAttribute("aria-selected", String(isSelected));
+function updateSelection(forceRefresh = false) {
+  if (tabCards.length === 0) return;
 
-    if (isSelected) {
-      card.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  if (selectedIndex < 0 || selectedIndex >= tabCards.length) return;
+
+  if (forceRefresh) {
+    tabCards.forEach((card, index) => {
+      const isSelected = index === selectedIndex;
+      card.classList.toggle("selected", isSelected);
+      card.setAttribute("aria-selected", String(isSelected));
+    });
+  } else if (lastSelectedIndex !== selectedIndex) {
+    if (lastSelectedIndex >= 0 && lastSelectedIndex < tabCards.length) {
+      const previous = tabCards[lastSelectedIndex];
+      previous.classList.remove("selected");
+      previous.setAttribute("aria-selected", "false");
     }
-  });
+
+    const current = tabCards[selectedIndex];
+    current.classList.add("selected");
+    current.setAttribute("aria-selected", "true");
+  }
+
+  tabCards[selectedIndex]?.scrollIntoView({ block: "nearest", behavior: "auto" });
+  lastSelectedIndex = selectedIndex;
 }
 
 // ============================================================================

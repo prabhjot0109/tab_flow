@@ -561,15 +561,3 @@ function selectLeft() {
   selectPrevious();
 }
 
-// Quick switch navigation
-export function selectNextQuickSwitch() {
-  if (!state.quickSwitchTabs || state.quickSwitchTabs.length === 0) return;
-  state.selectedIndex++;
-  if (state.selectedIndex >= state.quickSwitchTabs.length) {
-    state.selectedIndex = 0;
-  }
-  // Import updateQuickSwitchSelection from overlay
-  import("../ui/overlay").then(({ updateQuickSwitchSelection }) => {
-    updateQuickSwitchSelection();
-  });
-}

@@ -216,6 +216,17 @@ async function openQuickSwitchPopup(
   }
 }
 
+async function tryCycleOpenQuickSwitchOverlay(tabId: number): Promise<boolean> {
+  try {
+    const response = await chrome.tabs.sendMessage(tabId, {
+      action: "quickSwitchCycleIfOpen",
+    });
+    return !!response?.advanced;
+  } catch {
+    return false;
+  }
+}
+
 // ============================================================================
 // INITIALIZATION
 // ============================================================================
@@ -594,13 +605,7 @@ async function handleShowTabFlow(): Promise<void> {
 
 // Handle Quick Switch (Alt+Q) - Alt+Tab style switching without search
 async function handleQuickSwitch(): Promise<void> {
-  // Ensure cache and recent order are restored
-  if (screenshotCache.ready) await screenshotCache.ready;
-  if (!tabTracker.isRecentOrderRestored()) {
-    await tabTracker.restoreRecentOrder();
-  }
-
-  // EARLY CHECK: If Quick Switch popup already exists, cycle selection and return
+  // FAST PATH: If Quick Switch popup already exists, cycle selection and return
   if (QuickSwitchPopupWindowId !== null) {
     try {
       const existingWindow = await chrome.windows.get(QuickSwitchPopupWindowId);
@@ -624,7 +629,7 @@ async function handleQuickSwitch(): Promise<void> {
     }
   }
 
-  // Also check if we're already in the quick switch popup window
+  // FAST PATH: If currently focused on quick switch popup, cycle and return.
   try {
     const currentWindow = await chrome.windows.getCurrent();
     const QuickSwitchUrl = chrome.runtime.getURL("src/quick-switch/index.html");
@@ -648,6 +653,38 @@ async function handleQuickSwitch(): Promise<void> {
 
   try {
     const currentWindow = await chrome.windows.getCurrent();
+
+    // Resolve active tab first for cheap cycle checks.
+    const [activeTab] = await chrome.tabs.query({
+      active: true,
+      windowId: currentWindow.id,
+    });
+
+    if (!activeTab || typeof activeTab.id !== "number") {
+      console.warn("[QUICK SWITCH] No active tab found");
+      return;
+    }
+
+    // FAST PATH: If quick switch overlay is already open in page, cycle without
+    // rebuilding tab data.
+    if (screenshot.isTabCapturable(activeTab)) {
+      const cycled = await tryCycleOpenQuickSwitchOverlay(activeTab.id);
+      if (cycled) {
+        return;
+      }
+    }
+
+    // Restore recent order asynchronously. Quick switch can open immediately
+    // with Chrome's lastAccessed sorting while restoration catches up.
+    if (!tabTracker.isRecentOrderRestored()) {
+      tabTracker.restoreRecentOrder().catch((error) => {
+        console.debug(
+          "[QUICK SWITCH] Failed to restore recent order in background:",
+          error,
+        );
+      });
+    }
+
     const tabs = await chrome.tabs.query({ windowId: currentWindow.id });
 
     const tabsWithIds = tabs.filter(
@@ -672,17 +709,6 @@ async function handleQuickSwitch(): Promise<void> {
       groupId: tab.groupId,
       hasMedia: mediaTracker.hasMedia(tab.id) || tab.audible,
     }));
-
-    // Get active tab
-    const [activeTab] = await chrome.tabs.query({
-      active: true,
-      currentWindow: true,
-    });
-
-    if (!activeTab || typeof activeTab.id !== "number") {
-      console.warn("[QUICK SWITCH] No active tab found");
-      return;
-    }
 
     // For protected pages, open popup window instead
     if (!screenshot.isTabCapturable(activeTab)) {
