@@ -44,10 +44,6 @@ export function removeMediaTab(tabId: number): void {
   }
 }
 
-export function getMediaTabsCount(): number {
-  return tabsWithMedia.size;
-}
-
 // Also query currently audible tabs on startup
 export async function initializeAudibleTabs(): Promise<void> {
   try {

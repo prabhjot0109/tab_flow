@@ -1,5 +1,5 @@
 import { state } from "../state";
-import { switchToActive, switchToRecent, closeOverlay } from "../actions";
+import { switchToActive, switchToRecent } from "../actions";
 import {
   renderTabsStandard,
   renderTabsVirtual,

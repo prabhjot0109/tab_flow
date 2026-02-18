@@ -20,10 +20,6 @@ let currentQualityTier: string = PERF_CONFIG.DEFAULT_QUALITY_TIER;
 // QUALITY TIER MANAGEMENT
 // ============================================================================
 
-export function getCurrentQualityTier(): string {
-  return currentQualityTier;
-}
-
 export function setCurrentQualityTier(tier: string): boolean {
   if (PERF_CONFIG.QUALITY_TIERS[tier]) {
     currentQualityTier = tier;
@@ -142,7 +138,8 @@ async function downscaleScreenshot(
     ctx.drawImage(bitmap, 0, 0, target.width, target.height);
     bitmap.close?.();
 
-    const normalizedQuality = Math.min(1, Math.max(0, quality / 100));
+    // Keep post-resize encoding from getting too aggressive.
+    const normalizedQuality = Math.min(0.95, Math.max(0.65, quality / 100));
     const scaledBlob = await canvas.convertToBlob({
       type: "image/jpeg",
       quality: normalizedQuality,

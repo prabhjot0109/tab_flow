@@ -10,7 +10,7 @@ interface Settings {
 }
 
 const DEFAULTS: Settings = {
-  qualityTier: "PERFORMANCE",
+  qualityTier: "NORMAL",
   cacheMaxTabs: 100,
   cacheMaxMB: 50,
   tabFlowView: "grid",

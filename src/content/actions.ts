@@ -1,4 +1,4 @@
-import { state, Tab } from "./state";
+import { state } from "./state";
 import * as handlers from "./input/keyboard";
 import * as focus from "./input/focus";
 import {
@@ -233,7 +233,13 @@ export function restoreSession(sessionId: string) {
   }
 }
 
-export function closeTab(tabId: number, index: number) {
+function removeTabFromAllLists(tabId: number): void {
+  state.currentTabs = state.currentTabs.filter((tab) => tab && tab.id !== tabId);
+  state.filteredTabs = state.filteredTabs.filter((tab) => tab && tab.id !== tabId);
+  state.activeTabs = state.activeTabs.filter((tab) => tab && tab.id !== tabId);
+}
+
+export function closeTab(tabId: number) {
   try {
     if (!tabId || typeof tabId !== "number") {
       console.error("[Tab Flow] Invalid tab ID for closing:", tabId);
@@ -243,12 +249,7 @@ export function closeTab(tabId: number, index: number) {
     const tabExists = state.currentTabs.some((tab) => tab && tab.id === tabId);
     if (!tabExists) {
       console.warn("[Tab Flow] Tab no longer exists:", tabId);
-      state.filteredTabs = state.filteredTabs.filter(
-        (tab) => tab && tab.id !== tabId
-      );
-      state.currentTabs = state.currentTabs.filter(
-        (tab) => tab && tab.id !== tabId
-      );
+      removeTabFromAllLists(tabId);
 
       if (state.selectedIndex >= state.filteredTabs.length) {
         state.selectedIndex = Math.max(0, state.filteredTabs.length - 1);
@@ -281,12 +282,7 @@ export function closeTab(tabId: number, index: number) {
         }
 
         if (response?.success) {
-          state.currentTabs = state.currentTabs.filter(
-            (tab) => tab && tab.id !== tabId
-          );
-          state.filteredTabs = state.filteredTabs.filter(
-            (tab) => tab && tab.id !== tabId
-          );
+          removeTabFromAllLists(tabId);
 
           if (state.filteredTabs.length > 0) {
             if (state.selectedIndex >= state.filteredTabs.length) {

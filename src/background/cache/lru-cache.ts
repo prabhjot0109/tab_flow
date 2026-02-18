@@ -74,6 +74,15 @@ export class LRUCache {
         .sort((a, b) => b[1].timestamp - a[1].timestamp)
         .map((entry) => entry[0]);
 
+      // Enforce current limits immediately after restore so large persisted
+      // caches cannot exceed runtime memory/tab budgets.
+      while (
+        (this.cache.size > this.maxTabs || this.currentBytes > this.maxBytes) &&
+        this.cache.size > 0
+      ) {
+        this._evictLRU();
+      }
+
       console.log(
         `[CACHE] Restored ${this.cache.size} screenshots from storage`
       );

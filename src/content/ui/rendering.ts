@@ -1,12 +1,5 @@
-import { state, Tab, Group } from "../state";
-import {
-  closeOverlay,
-  switchToTab,
-  toggleMute,
-  togglePlayPause,
-  restoreSession,
-  closeTab,
-} from "../actions";
+import { state, Tab } from "../state";
+import { closeOverlay } from "../actions";
 
 const DEBUG_LOGGING = false;
 const log = (...args: unknown[]) => {

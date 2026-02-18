@@ -692,7 +692,8 @@
   height: 100%;
   object-fit: cover;
   object-position: top center;
-  opacity: 0.95;
+  opacity: 1;
+  image-rendering: auto;
   /* Simple opacity transition only */
   transition: opacity var(--transition-fast);
 }

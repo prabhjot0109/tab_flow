@@ -3,8 +3,6 @@
 // Manages tab order tracking (recent access order, open order)
 // ============================================================================
 
-import { PERF_CONFIG } from "../config";
-
 // Track tab access order (most recent first) - will be restored from storage
 let recentTabOrder: number[] = [];
 
@@ -26,10 +24,6 @@ let saveRecentOrderTimer: ReturnType<typeof setTimeout> | null = null;
 // ============================================================================
 // GETTERS
 // ============================================================================
-
-export function getRecentTabOrder(): number[] {
-  return recentTabOrder;
-}
 
 export function getTabOpenTime(tabId: number): number | undefined {
   return tabOpenOrder.get(tabId);

@@ -5,7 +5,6 @@
 
 import { PERF_CONFIG } from "../config";
 import { LRUCache } from "../cache/lru-cache";
-import { perfMetrics } from "../utils/performance";
 import * as mediaTracker from "../services/media-tracker";
 import * as tabTracker from "../services/tab-tracker";
 import * as screenshot from "../services/screenshot";
@@ -20,21 +19,102 @@ const log = (...args: unknown[]) => {
   }
 };
 
+type MessageAction =
+  | "FlowPopupCycleNext"
+  | "QuickSwitchPopupCycleNext"
+  | "reportMediaPresence"
+  | "getRecentlyClosed"
+  | "restoreSession"
+  | "switchToTab"
+  | "closeTab"
+  | "toggleMute"
+  | "togglePlayPause"
+  | "refreshTabList"
+  | "captureTabScreenshot"
+  | "getCacheStats"
+  | "setQualityTier"
+  | "updateCacheSettings"
+  | "createGroup"
+  | "getTabsForFlow"
+  | "getTabsForQuickSwitch";
+
+type IncomingMessage =
+  | { action: "FlowPopupCycleNext" }
+  | { action: "QuickSwitchPopupCycleNext" }
+  | { action: "reportMediaPresence"; hasMedia?: boolean; isPlaying?: boolean }
+  | { action: "getRecentlyClosed"; maxResults?: number }
+  | { action: "restoreSession"; sessionId?: string }
+  | { action: "switchToTab"; tabId?: number }
+  | { action: "closeTab"; tabId?: number }
+  | { action: "toggleMute"; tabId?: number }
+  | { action: "togglePlayPause"; tabId?: number }
+  | { action: "refreshTabList" }
+  | { action: "captureTabScreenshot"; tabId?: number; forceQuality?: string }
+  | { action: "getCacheStats" }
+  | { action: "setQualityTier"; tier?: string }
+  | { action: "updateCacheSettings"; maxTabs?: number; maxMB?: number }
+  | { action: "createGroup"; tabId?: number }
+  | { action: "getTabsForFlow" }
+  | { action: "getTabsForQuickSwitch" };
+
+type MessageResponse = {
+  success: boolean;
+  error?: string;
+  [key: string]: unknown;
+};
+
+const MESSAGE_ACTIONS: ReadonlySet<MessageAction> = new Set([
+  "FlowPopupCycleNext",
+  "QuickSwitchPopupCycleNext",
+  "reportMediaPresence",
+  "getRecentlyClosed",
+  "restoreSession",
+  "switchToTab",
+  "closeTab",
+  "toggleMute",
+  "togglePlayPause",
+  "refreshTabList",
+  "captureTabScreenshot",
+  "getCacheStats",
+  "setQualityTier",
+  "updateCacheSettings",
+  "createGroup",
+  "getTabsForFlow",
+  "getTabsForQuickSwitch",
+]);
+
+function parseIncomingMessage(request: unknown): IncomingMessage | null {
+  if (!request || typeof request !== "object") return null;
+  const action = (request as { action?: unknown }).action;
+  if (
+    typeof action !== "string" ||
+    !MESSAGE_ACTIONS.has(action as MessageAction)
+  ) {
+    return null;
+  }
+  return request as IncomingMessage;
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export async function handleMessage(
-  request: any,
+  request: unknown,
   sender: chrome.runtime.MessageSender,
-  sendResponse: (response?: any) => void,
+  sendResponse: (response?: MessageResponse) => void,
   screenshotCache: LRUCache,
   showTabFlow: () => Promise<void>
 ): Promise<void> {
   try {
-    if (!request || !request.action) {
+    const parsedRequest = parseIncomingMessage(request);
+    if (!parsedRequest) {
       console.error("[ERROR] Invalid message received:", request);
       sendResponse({ success: false, error: "Invalid message format" });
       return;
     }
 
-    switch (request.action) {
+    switch (parsedRequest.action) {
       case "FlowPopupCycleNext":
         // Internal message used to control the standalone Flow popup.
         // The popup page listens for this; background can safely ack it too.
@@ -59,7 +139,9 @@ export async function handleMessage(
           const apiMax = 25;
           const uiMax = Math.min(
             25,
-            typeof request.maxResults === "number" ? request.maxResults : 10
+            typeof parsedRequest.maxResults === "number"
+              ? parsedRequest.maxResults
+              : 10
           );
           const sessions = await chrome.sessions.getRecentlyClosed({
             maxResults: apiMax,
@@ -100,86 +182,89 @@ export async function handleMessage(
           items.sort((a, b) => (b.lastModified || 0) - (a.lastModified || 0));
           const limited = items.slice(0, uiMax);
           sendResponse({ success: true, items: limited });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("[ERROR] Failed to get recently closed:", error);
-          sendResponse({ success: false, error: error.message });
+          sendResponse({ success: false, error: getErrorMessage(error) });
         }
         break;
 
       case "restoreSession":
         try {
-          if (!request.sessionId || typeof request.sessionId !== "string") {
+          if (
+            !parsedRequest.sessionId ||
+            typeof parsedRequest.sessionId !== "string"
+          ) {
             sendResponse({ success: false, error: "Invalid sessionId" });
             return;
           }
-          const restored = await chrome.sessions.restore(request.sessionId);
+          const restored = await chrome.sessions.restore(parsedRequest.sessionId);
           sendResponse({ success: true, restored });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("[ERROR] Failed to restore session:", error);
-          sendResponse({ success: false, error: error.message });
+          sendResponse({ success: false, error: getErrorMessage(error) });
         }
         break;
 
       case "switchToTab":
-        if (!request.tabId || typeof request.tabId !== "number") {
+        if (!parsedRequest.tabId || typeof parsedRequest.tabId !== "number") {
           sendResponse({ success: false, error: "Invalid tab ID" });
           return;
         }
         try {
-          await chrome.tabs.update(request.tabId, { active: true });
+          await chrome.tabs.update(parsedRequest.tabId, { active: true });
           sendResponse({ success: true });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("[ERROR] Failed to switch to tab:", error);
-          sendResponse({ success: false, error: error.message });
+          sendResponse({ success: false, error: getErrorMessage(error) });
         }
         break;
 
       case "closeTab":
-        if (!request.tabId || typeof request.tabId !== "number") {
+        if (!parsedRequest.tabId || typeof parsedRequest.tabId !== "number") {
           sendResponse({ success: false, error: "Invalid tab ID" });
           return;
         }
         try {
-          const tab = await chrome.tabs.get(request.tabId).catch(() => null);
+          const tab = await chrome.tabs.get(parsedRequest.tabId).catch(() => null);
           if (!tab) {
-            console.warn("[WARNING] Tab no longer exists:", request.tabId);
+            console.warn("[WARNING] Tab no longer exists:", parsedRequest.tabId);
             sendResponse({ success: false, error: "Tab no longer exists" });
             return;
           }
-          await chrome.tabs.remove(request.tabId);
+          await chrome.tabs.remove(parsedRequest.tabId);
           sendResponse({ success: true });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("[ERROR] Failed to close tab:", error);
-          sendResponse({ success: false, error: error.message });
+          sendResponse({ success: false, error: getErrorMessage(error) });
         }
         break;
 
       case "toggleMute":
-        if (!request.tabId || typeof request.tabId !== "number") {
+        if (!parsedRequest.tabId || typeof parsedRequest.tabId !== "number") {
           sendResponse({ success: false, error: "Invalid tab ID" });
           return;
         }
         try {
-          const tab = await chrome.tabs.get(request.tabId);
+          const tab = await chrome.tabs.get(parsedRequest.tabId);
           const newMutedStatus = !(tab.mutedInfo?.muted ?? false);
-          await chrome.tabs.update(request.tabId, { muted: newMutedStatus });
+          await chrome.tabs.update(parsedRequest.tabId, { muted: newMutedStatus });
           sendResponse({ success: true, muted: newMutedStatus });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("[ERROR] Failed to toggle mute:", error);
-          sendResponse({ success: false, error: error.message });
+          sendResponse({ success: false, error: getErrorMessage(error) });
         }
         break;
 
       case "togglePlayPause":
-        if (!request.tabId || typeof request.tabId !== "number") {
+        if (!parsedRequest.tabId || typeof parsedRequest.tabId !== "number") {
           sendResponse({ success: false, error: "Invalid tab ID" });
           return;
         }
         try {
-          const tab = await chrome.tabs.get(request.tabId);
+          const tab = await chrome.tabs.get(parsedRequest.tabId);
           if (screenshot.isTabCapturable(tab)) {
             const results = await chrome.scripting.executeScript({
-              target: { tabId: request.tabId },
+              target: { tabId: parsedRequest.tabId },
               func: () => {
                 const media = [
                   ...document.querySelectorAll("video, audio"),
@@ -214,9 +299,9 @@ export async function handleMessage(
               error: "Cannot script in this tab",
             });
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("[ERROR] Failed to toggle play/pause:", error);
-          sendResponse({ success: false, error: error.message });
+          sendResponse({ success: false, error: getErrorMessage(error) });
         }
         break;
 
@@ -224,24 +309,24 @@ export async function handleMessage(
         try {
           await showTabFlow();
           sendResponse({ success: true });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("[ERROR] Failed to refresh tab list:", error);
-          sendResponse({ success: false, error: error.message });
+          sendResponse({ success: false, error: getErrorMessage(error) });
         }
         break;
 
       case "captureTabScreenshot":
-        if (!request.tabId || typeof request.tabId !== "number") {
+        if (!parsedRequest.tabId || typeof parsedRequest.tabId !== "number") {
           sendResponse({ success: false, error: "Invalid tab ID" });
           return;
         }
         try {
           const forceQuality =
-            typeof request.forceQuality === "string"
-              ? request.forceQuality
+            typeof parsedRequest.forceQuality === "string"
+              ? parsedRequest.forceQuality
               : null;
           const capturedScreenshot = await screenshot.captureTabScreenshot(
-            request.tabId,
+            parsedRequest.tabId,
             screenshotCache,
             forceQuality
           );
@@ -249,9 +334,9 @@ export async function handleMessage(
             success: !!capturedScreenshot,
             screenshot: capturedScreenshot,
           });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("[ERROR] Failed to capture screenshot:", error);
-          sendResponse({ success: false, error: error.message });
+          sendResponse({ success: false, error: getErrorMessage(error) });
         }
         break;
 
@@ -259,32 +344,34 @@ export async function handleMessage(
         try {
           const stats = screenshotCache.getStats();
           sendResponse({ success: true, stats });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("[ERROR] Failed to get cache stats:", error);
-          sendResponse({ success: false, error: error.message });
+          sendResponse({ success: false, error: getErrorMessage(error) });
         }
         break;
 
       case "setQualityTier":
         try {
-          const tier = request.tier || PERF_CONFIG.DEFAULT_QUALITY_TIER;
+          const tier = parsedRequest.tier || PERF_CONFIG.DEFAULT_QUALITY_TIER;
           if (screenshot.setCurrentQualityTier(tier)) {
             chrome.storage.local.set({ qualityTier: tier });
+            // Force fresh captures at the new tier instead of serving stale cache.
+            screenshotCache.clear();
             log(`[SETTINGS] Quality tier changed to: ${tier}`);
             sendResponse({ success: true, tier });
           } else {
             sendResponse({ success: false, error: "Invalid quality tier" });
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("[ERROR] Failed to set quality tier:", error);
-          sendResponse({ success: false, error: error.message });
+          sendResponse({ success: false, error: getErrorMessage(error) });
         }
         break;
 
       case "updateCacheSettings":
         try {
-          const rawTabs = request.maxTabs;
-          const rawMB = request.maxMB;
+          const rawTabs = parsedRequest.maxTabs;
+          const rawMB = parsedRequest.maxMB;
           if (typeof rawTabs !== "number" || typeof rawMB !== "number") {
             sendResponse({ success: false, error: "Invalid cache settings" });
             return;
@@ -296,16 +383,16 @@ export async function handleMessage(
           screenshotCache.resize(maxTabs, maxMB * 1024 * 1024);
           chrome.storage.local.set({ cacheMaxTabs: maxTabs, cacheMaxMB: maxMB });
           sendResponse({ success: true, maxTabs, maxMB });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("[ERROR] Failed to update cache settings:", error);
-          sendResponse({ success: false, error: error.message });
+          sendResponse({ success: false, error: getErrorMessage(error) });
         }
         break;
 
       case "createGroup":
         try {
-          if (request.tabId && chrome.tabs.group) {
-            const groupId = await chrome.tabs.group({ tabIds: request.tabId });
+          if (parsedRequest.tabId && chrome.tabs.group) {
+            const groupId = await chrome.tabs.group({ tabIds: parsedRequest.tabId });
             sendResponse({ success: true, groupId });
           } else {
             sendResponse({
@@ -313,17 +400,25 @@ export async function handleMessage(
               error: "Missing tabId or API not supported",
             });
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("[GROUPS] Failed to create group:", error);
-          sendResponse({ success: false, error: error.message });
+          sendResponse({ success: false, error: getErrorMessage(error) });
         }
         break;
 
       case "getTabsForFlow":
         // Used by the popup window fallback to request tab data directly
         try {
-          const currentWindow = await chrome.windows.getCurrent();
-          const tabs = await chrome.tabs.query({ windowId: currentWindow.id });
+          const targetWindowId = await resolveTargetNormalWindowId(sender);
+          if (targetWindowId === null) {
+            sendResponse({
+              success: false,
+              error: "No normal browser window available",
+            });
+            return;
+          }
+
+          const tabs = await chrome.tabs.query({ windowId: targetWindowId });
 
           const tabsWithIds = tabs.filter(
             (tab): tab is chrome.tabs.Tab & { id: number } =>
@@ -335,7 +430,7 @@ export async function handleMessage(
           if (chrome.tabGroups) {
             try {
               groups = await chrome.tabGroups.query({
-                windowId: currentWindow.id,
+                windowId: targetWindowId,
               });
             } catch (e) {
               console.debug("[GROUPS] Failed to fetch groups:", e);
@@ -346,7 +441,7 @@ export async function handleMessage(
           const sortedTabs = tabTracker.sortTabsByRecent(tabsWithIds);
 
           // Build tab data with cached screenshots
-          const RECENT_PREVIEW_LIMIT = 8;
+          const RECENT_PREVIEW_LIMIT = 30;
 
           const tabsData = sortedTabs.map((tab, index) => {
             let screenshotData = null;
@@ -390,35 +485,22 @@ export async function handleMessage(
             tabs: tabsData,
             groups: groupsData,
           });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("[ERROR] Failed to get tabs for Flow:", error);
-          sendResponse({ success: false, error: error.message });
+          sendResponse({ success: false, error: getErrorMessage(error) });
         }
         break;
 
       case "getTabsForQuickSwitch":
         // Used by the Quick Switch popup window to request tab data directly
         try {
-          const currentWindow = await chrome.windows.getCurrent();
-          const allWindows = await chrome.windows.getAll({ populate: false });
-
-          // Find the main browser window (not popup type)
-          let targetWindowId = currentWindow.id;
-          for (const win of allWindows) {
-            if (win.type === "normal" && win.focused !== true) {
-              targetWindowId = win.id;
-              break;
-            }
-          }
-
-          // If the current window is a popup, find the last focused normal window
-          if (currentWindow.type === "popup") {
-            for (const win of allWindows) {
-              if (win.type === "normal") {
-                targetWindowId = win.id;
-                break;
-              }
-            }
+          const targetWindowId = await resolveTargetNormalWindowId(sender);
+          if (targetWindowId === null) {
+            sendResponse({
+              success: false,
+              error: "No normal browser window available",
+            });
+            return;
           }
 
           const tabs = await chrome.tabs.query({
@@ -452,20 +534,59 @@ export async function handleMessage(
             success: true,
             tabs: tabsData,
           });
-        } catch (error: any) {
+        } catch (error: unknown) {
           console.error("[ERROR] Failed to get tabs for Quick Switch:", error);
-          sendResponse({ success: false, error: error.message });
+          sendResponse({ success: false, error: getErrorMessage(error) });
         }
         break;
 
       default:
-        console.warn("[WARNING] Unknown action:", request.action);
+        console.warn("[WARNING] Unknown action received.");
         sendResponse({ success: false, error: "Unknown action" });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`[ERROR] Message handler failed:`, error);
-    sendResponse({ success: false, error: error.message });
+    sendResponse({ success: false, error: getErrorMessage(error) });
   }
+}
+
+async function resolveTargetNormalWindowId(
+  sender: chrome.runtime.MessageSender
+): Promise<number | null> {
+  const senderWindowId = sender.tab?.windowId;
+  if (typeof senderWindowId === "number") {
+    const senderWindow = await chrome.windows.get(senderWindowId).catch(() => null);
+    if (senderWindow?.type === "normal") {
+      return senderWindowId;
+    }
+  }
+
+  const lastFocusedNormal = await chrome.windows
+    .getLastFocused({
+      populate: false,
+      windowTypes: ["normal"],
+    })
+    .catch(() => null);
+  if (typeof lastFocusedNormal?.id === "number") {
+    return lastFocusedNormal.id;
+  }
+
+  const normalWindows = await chrome.windows.getAll({
+    populate: false,
+    windowTypes: ["normal"],
+  });
+  if (normalWindows.length === 0) return null;
+
+  const focusedNormal = normalWindows.find((window) => window.focused);
+  if (typeof focusedNormal?.id === "number") {
+    return focusedNormal.id;
+  }
+
+  const fallbackWindow = normalWindows.find(
+    (window): window is chrome.windows.Window & { id: number } =>
+      typeof window.id === "number"
+  );
+  return fallbackWindow?.id ?? null;
 }
 
 function isMissingConnectionError(error: unknown): boolean {
@@ -529,8 +650,8 @@ async function tryInjectContentScript(tabId: number): Promise<boolean> {
       files: [contentScriptPath],
     });
     return true;
-  } catch (injectErr: any) {
-    const msg = injectErr && injectErr.message ? injectErr.message : "";
+  } catch (injectErr: unknown) {
+    const msg = getErrorMessage(injectErr);
     if (isProtectedInjectionError(msg)) {
       console.warn(
         "[INJECT] Cannot inject on this page (protected URL). Try on a regular webpage."
@@ -558,13 +679,13 @@ async function tryInjectContentScript(tabId: number): Promise<boolean> {
 // Send message with automatic script injection
 export async function sendMessageWithRetry(
   tabId: number,
-  message: any,
+  message: Record<string, unknown>,
   retries = 1
 ): Promise<boolean> {
   try {
     await chrome.tabs.sendMessage(tabId, message);
     return true;
-  } catch (err: any) {
+  } catch (err: unknown) {
     if (retries > 0 && isMissingConnectionError(err)) {
       try {
         const injected = await tryInjectContentScript(tabId);
@@ -580,3 +701,4 @@ export async function sendMessageWithRetry(
     throw err;
   }
 }
+

@@ -1,4 +1,3 @@
-import "./utils/messaging.js";
 import { state } from "./state";
 import {
   showTabFlow,
@@ -9,19 +8,6 @@ import {
 import { selectNext } from "./input/keyboard";
 import { enforceSingleSelection } from "./ui/rendering";
 import { closeOverlay } from "./actions";
-
-const DEBUG_LOGGING = false;
-const log = (...args: unknown[]) => {
-  if (DEBUG_LOGGING) {
-    console.log(...args);
-  }
-};
-
-log("═══════════════════════════════════════════════════════");
-log("Visual Tab Flow - Content Script Loaded");
-log("Features: Virtual Scrolling, Event Delegation, GPU Acceleration");
-log("Target: <16ms interactions, 60fps, lazy loading");
-log("═══════════════════════════════════════════════════════");
 
 // Media detection to report to background
 function detectMedia() {

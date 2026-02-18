@@ -29,12 +29,8 @@ export function handleGridClick(e: MouseEvent) {
       const tabId = parseInt(
         target.dataset.tabId || target.parentElement!.dataset.tabId || "0"
       );
-      const index = parseInt(
-        target.dataset.tabIndex || target.parentElement!.dataset.tabIndex || "0"
-      );
-
       if (tabId && !Number.isNaN(tabId)) {
-        closeTab(tabId, index);
+        closeTab(tabId);
       }
       return;
     }
@@ -321,7 +317,7 @@ export function handleKeyDown(e: KeyboardEvent) {
           e.preventDefault();
           const tab = state.filteredTabs[state.selectedIndex];
           if (tab?.id) {
-            closeTab(tab.id, state.selectedIndex);
+            closeTab(tab.id);
           }
         }
         break;
@@ -436,7 +432,7 @@ export function handleSearchKeydown(e: KeyboardEvent) {
         state.selectedIndex < state.filteredTabs.length
       ) {
         const tab = state.filteredTabs[state.selectedIndex];
-        if (tab?.id) closeTab(tab.id, state.selectedIndex);
+        if (tab?.id) closeTab(tab.id);
       }
       return;
     }

@@ -1,11 +1,6 @@
 import { state, type Group, type Tab } from "../state";
 import { SHADOW_CSS, SHADOW_HOST_ID } from "./styles";
-import {
-  closeOverlay,
-  switchToActive,
-  switchToRecent,
-  setViewMode,
-} from "../actions";
+import { closeOverlay, setViewMode } from "../actions";
 import { createSmartSearchHandler } from "../input/search";
 import {
   handleSearchKeydown,
@@ -16,7 +11,6 @@ import {
 import {
   renderTabsStandard,
   renderTabsVirtual,
-  enforceSingleSelection,
   applyGroupViewTransformation,
   shouldUseVirtualRendering,
 } from "./rendering";
@@ -494,8 +488,6 @@ export function showTabFlow(
   activeTabId: number | null | undefined,
   groups: Group[] = []
 ) {
-  const startTime = performance.now();
-
   log(`[Tab Flow] Opening with ${tabs.length} tabs and ${groups.length} groups`);
 
   // Capture fullscreen element before showing overlay

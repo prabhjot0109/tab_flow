@@ -1,136 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tab Flow</title>
-    <script type="module" crossorigin src="/assets/Flow-BgYnk3yz.js"></script>
-    <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
-    <link rel="stylesheet" crossorigin href="/assets/Flow-CWYzzgKA.css">
-  </head>
-  <body>
-      <div id="visual-tab-flow-overlay" class="tab-flow-overlay">
-        <div class="tab-flow-backdrop"></div>
 
-      <div
-        class="tab-flow-container"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="tab-flow-title"
-        aria-describedby="tab-flow-help"
-      >
-        <!-- Search Header -->
-        <div class="tab-flow-search-row">
-          <div class="tab-flow-search-wrap">
-            <div class="search-icon">
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <rect x="3" y="3" width="7" height="7" rx="1"></rect>
-                <rect x="14" y="3" width="7" height="7" rx="1"></rect>
-                <rect x="3" y="14" width="7" height="7" rx="1"></rect>
-                <rect x="14" y="14" width="7" height="7" rx="1"></rect>
-              </svg>
-            </div>
-            <input
-              type="text"
-              class="tab-flow-search"
-              placeholder="Search tabs by title or URL..."
-              autocomplete="off"
-              aria-label="Search tabs"
-              aria-describedby="tab-flow-search-hint"
-            />
-            <div class="search-tab-hint" id="tab-flow-search-hint">
-              <kbd>Tab</kbd> Search Google
-            </div>
-          </div>
-        </div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tab Flow</title>
+  <style>
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #111214;
+    }
+  </style>
+  <script type="module" crossorigin src="/assets/Flow-BQaVmurE.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/modulepreload-polyfill-B5Qt9EMX.js">
+  <link rel="modulepreload" crossorigin href="/assets/overlay-DiZnRlrK.js">
+</head>
 
-        <!-- Section Header -->
-        <div class="tab-flow-section-header">
-          <span class="tab-flow-section-title" id="tab-flow-title">
-            Opened Tabs
-          </span>
-          <div class="tab-flow-view-toggle">
-            <button
-              type="button"
-              class="view-toggle-btn active"
-              data-view="grid"
-              title="Grid View"
-              aria-label="Grid view"
-              aria-pressed="true"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <rect x="3" y="3" width="7" height="7" rx="1"></rect>
-                <rect x="14" y="3" width="7" height="7" rx="1"></rect>
-                <rect x="3" y="14" width="7" height="7" rx="1"></rect>
-                <rect x="14" y="14" width="7" height="7" rx="1"></rect>
-              </svg>
-            </button>
-            <button
-              type="button"
-              class="view-toggle-btn"
-              data-view="list"
-              title="List View"
-              aria-label="List view"
-              aria-pressed="false"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
-              </svg>
-            </button>
-          </div>
-        </div>
+<body>
+</body>
 
-        <!-- Tab Grid -->
-        <div
-          class="tab-flow-grid"
-          id="tab-flow-grid"
-          role="listbox"
-          aria-label="Open tabs"
-        >
-          <!-- Tabs will be rendered here -->
-        </div>
-
-        <!-- Help text -->
-        <div
-          class="tab-flow-help"
-          id="tab-flow-help"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          <span><kbd>Alt+Q</kbd> <kbd>↑↓</kbd> Navigate</span>
-          <span><kbd>↵</kbd>Switch</span>
-          <span><kbd>Del</kbd>Close</span>
-          <span><kbd>.</kbd>Recent</span>
-          <span><kbd>;</kbd>History</span>
-          <span><kbd>Esc</kbd>Exit</span>
-        </div>
-      </div>
-    </div>
-
-  </body>
 </html>
-
-
-
-

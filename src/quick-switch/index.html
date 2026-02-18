@@ -1,85 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quick Switch</title>
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
-    <div class="quick-switch-overlay">
-      <div
-        class="quick-switch-container"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="quick-switch-title"
-        aria-describedby="quick-switch-help"
-      >
-        <div class="quick-switch-header">
-          <span class="quick-switch-title" id="quick-switch-title">
-            Switch Tabs
-          </span>
-          <div class="view-toggle">
-            <button
-              type="button"
-              class="view-toggle-btn active"
-              data-view="grid"
-              title="Grid View"
-              aria-label="Grid view"
-              aria-pressed="true"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <rect x="3" y="3" width="7" height="7" rx="1"></rect>
-                <rect x="14" y="3" width="7" height="7" rx="1"></rect>
-                <rect x="3" y="14" width="7" height="7" rx="1"></rect>
-                <rect x="14" y="14" width="7" height="7" rx="1"></rect>
-              </svg>
-            </button>
-            <button
-              type="button"
-              class="view-toggle-btn"
-              data-view="list"
-              title="List View"
-              aria-label="List view"
-              aria-pressed="false"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <line x1="3" y1="6" x2="21" y2="6"></line>
-                <line x1="3" y1="12" x2="21" y2="12"></line>
-                <line x1="3" y1="18" x2="21" y2="18"></line>
-              </svg>
-            </button>
-          </div>
-        </div>
-        <div
-          id="tab-grid"
-          class="tab-grid"
-          role="listbox"
-          aria-label="Quick switch tabs"
-        ></div>
-        <div
-          class="quick-switch-help"
-          id="quick-switch-help"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          <span><kbd>Alt+Q</kbd> Cycle</span>
-          <span><kbd>↑↓</kbd> Navigate</span>
-          <span>Release <kbd>Alt</kbd> to Switch</span>
-          <span><kbd>Esc</kbd> Cancel</span>
-        </div>
-      </div>
-    </div>
-    <script type="module" src="index.ts"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quick Switch</title>
+  <style>
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #111214;
+    }
+  </style>
+</head>
+
+<body>
+  <script type="module" src="index.ts"></script>
+</body>
+
 </html>

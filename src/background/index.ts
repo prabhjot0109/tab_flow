@@ -28,6 +28,7 @@ const screenshotCache = new LRUCache(
   PERF_CONFIG.MAX_CACHED_TABS,
   PERF_CONFIG.MAX_CACHE_BYTES,
 );
+const SCREENSHOT_PROFILE_VERSION = 2;
 
 // Track the popup window ID to avoid duplicates
 let FlowPopupWindowId: number | null = null;
@@ -247,6 +248,7 @@ async function initialize(): Promise<void> {
   log("═══════════════════════════════════════════════════════");
 
   await loadCacheSettings();
+  await refreshScreenshotCacheIfProfileChanged();
 
   // Load persisted data
   await mediaTracker.loadTabsWithMedia();
@@ -269,6 +271,27 @@ async function initialize(): Promise<void> {
 
   // Set up alarms for periodic tasks (replaces setInterval)
   await setupAlarms();
+}
+
+async function refreshScreenshotCacheIfProfileChanged(): Promise<void> {
+  try {
+    const result = await chrome.storage.local.get(["screenshotProfileVersion"]);
+    const storedVersion =
+      typeof result.screenshotProfileVersion === "number"
+        ? result.screenshotProfileVersion
+        : 0;
+
+    if (storedVersion >= SCREENSHOT_PROFILE_VERSION) {
+      return;
+    }
+
+    screenshotCache.clear();
+    await chrome.storage.local.set({
+      screenshotProfileVersion: SCREENSHOT_PROFILE_VERSION,
+    });
+  } catch (error) {
+    console.warn("[CACHE] Failed to refresh screenshot cache profile:", error);
+  }
 }
 
 // ============================================================================
@@ -515,7 +538,7 @@ async function handleShowTabFlow(): Promise<void> {
 
     // Build tab data with cached screenshots
     // Increased limit for better preview coverage with 100+ tabs
-    const RECENT_PREVIEW_LIMIT = 20;
+    const RECENT_PREVIEW_LIMIT = 30;
 
     const tabsData = sortedTabs.map((tab, index) => {
       let screenshotData = null;
@@ -710,7 +733,8 @@ async function handleQuickSwitch(): Promise<void> {
       hasMedia: mediaTracker.hasMedia(tab.id) || tab.audible,
     }));
 
-    // For protected pages, open popup window instead
+    // For protected pages, open popup window fallback that runs the same
+    // quick-switch overlay behavior as injected pages.
     if (!screenshot.isTabCapturable(activeTab)) {
       console.log("[QUICK SWITCH] Protected page, opening popup window");
       await openQuickSwitchPopup(tabsData, activeTab.id);

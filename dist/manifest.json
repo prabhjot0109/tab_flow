@@ -85,7 +85,8 @@
         "https://*/*"
       ],
       "resources": [
-        "assets/index.ts-xvLPb8KP.js"
+        "assets/overlay-DiZnRlrK.js",
+        "assets/index.ts-4LhKo9do.js"
       ],
       "use_dynamic_url": false
     }
