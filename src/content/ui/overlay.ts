@@ -316,6 +316,9 @@ export function createOverlay() {
   overlay.id = "visual-tab-flow-overlay";
   overlay.className = "tab-flow-overlay";
   overlay.style.willChange = "opacity"; // GPU hint
+  overlay.style.display = "flex";
+  overlay.style.visibility = "hidden";
+  overlay.style.pointerEvents = "none";
 
   // Create backdrop
   const backdrop = document.createElement("div");
@@ -380,9 +383,8 @@ export function createOverlay() {
 
   const gridViewBtn = document.createElement("button");
   gridViewBtn.type = "button";
-  gridViewBtn.className = `view-toggle-btn ${
-    currentView === "grid" ? "active" : ""
-  }`;
+  gridViewBtn.className = `view-toggle-btn ${currentView === "grid" ? "active" : ""
+    }`;
   gridViewBtn.dataset.view = "grid";
   gridViewBtn.title = "Grid View";
   gridViewBtn.setAttribute("aria-label", "Grid view");
@@ -391,9 +393,8 @@ export function createOverlay() {
 
   const listViewBtn = document.createElement("button");
   listViewBtn.type = "button";
-  listViewBtn.className = `view-toggle-btn ${
-    currentView === "list" ? "active" : ""
-  }`;
+  listViewBtn.className = `view-toggle-btn ${currentView === "list" ? "active" : ""
+    }`;
   listViewBtn.dataset.view = "list";
   listViewBtn.title = "List View";
   listViewBtn.setAttribute("aria-label", "List view");
@@ -525,6 +526,8 @@ export function showTabFlow(
 
   // Ensure visual state is correct immediately
   {
+    overlayEl.style.visibility = "visible";
+    overlayEl.style.pointerEvents = "auto";
     overlayEl.style.display = "flex";
     // Force a reflow or just assume RAF handles the transition reset?
     // If we are fading out (opacity 0.5 -> 0), we want to snap back to 1 or fade in?
@@ -588,6 +591,8 @@ export function showTabFlow(
   }
 
   // Make visible immediately to allow focus and event trapping
+  overlayEl.style.visibility = "visible";
+  overlayEl.style.pointerEvents = "auto";
   overlayEl.style.display = "flex";
   overlayEl.style.opacity = "0";
   state.isOverlayVisible = true;
@@ -768,9 +773,8 @@ function createQuickSwitchOverlay() {
 
   const gridViewBtn = document.createElement("button");
   gridViewBtn.type = "button";
-  gridViewBtn.className = `view-toggle-btn ${
-    cachedQuickSwitchViewMode === "grid" ? "active" : ""
-  }`;
+  gridViewBtn.className = `view-toggle-btn ${cachedQuickSwitchViewMode === "grid" ? "active" : ""
+    }`;
   gridViewBtn.dataset.view = "grid";
   gridViewBtn.title = "Grid View";
   gridViewBtn.setAttribute("aria-label", "Grid view");
@@ -782,9 +786,8 @@ function createQuickSwitchOverlay() {
 
   const listViewBtn = document.createElement("button");
   listViewBtn.type = "button";
-  listViewBtn.className = `view-toggle-btn ${
-    cachedQuickSwitchViewMode === "list" ? "active" : ""
-  }`;
+  listViewBtn.className = `view-toggle-btn ${cachedQuickSwitchViewMode === "list" ? "active" : ""
+    }`;
   listViewBtn.dataset.view = "list";
   listViewBtn.title = "List View";
   listViewBtn.setAttribute("aria-label", "List view");
@@ -803,9 +806,8 @@ function createQuickSwitchOverlay() {
 
   // Grid container (starts with list view by default)
   const grid = document.createElement("div");
-  grid.className = `tab-flow-grid quick-switch-grid ${
-    cachedQuickSwitchViewMode === "list" ? "list-view" : ""
-  }`;
+  grid.className = `tab-flow-grid quick-switch-grid ${cachedQuickSwitchViewMode === "list" ? "list-view" : ""
+    }`;
   grid.id = "quick-switch-grid";
   grid.setAttribute("role", "listbox");
   grid.setAttribute("aria-label", "Quick switch tabs");
@@ -895,9 +897,8 @@ function renderQuickSwitchTabs(tabs: Tab[]) {
 
   tabs.forEach((tab, index) => {
     const card = document.createElement("div");
-    card.className = `tab-card${
-      index === state.selectedIndex ? " selected" : ""
-    }${tab.active ? " current-tab" : ""}`;
+    card.className = `tab-card${index === state.selectedIndex ? " selected" : ""
+      }${tab.active ? " current-tab" : ""}`;
     card.dataset.tabId = String(tab.id);
     card.dataset.tabIndex = String(index);
     card.setAttribute("role", "option");
@@ -1074,7 +1075,7 @@ function handleQuickSwitchKeyUp(e: KeyboardEvent) {
   if (!state.isQuickSwitchVisible) return;
 
   // When Alt is released, switch to the selected tab
-  if (e.key === "Alt") {
+  if (e.key === "Alt" || (!e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey)) {
     e.preventDefault();
     if (state.quickSwitchTabs.length > 0 && state.selectedIndex >= 0) {
       const tab = state.quickSwitchTabs[state.selectedIndex];
@@ -1131,6 +1132,12 @@ export async function showQuickSwitch(
   // Lock page interaction
   focus.lockPageInteraction();
   focus.blurPageElements();
+
+  if (quickSwitchGrid) {
+    // Setting focus to the grid ensures the keyup events continue to fire
+    // even after document.body is marked inert.
+    quickSwitchGrid.focus();
+  }
 
   // Animate in
   requestAnimationFrame(() => {

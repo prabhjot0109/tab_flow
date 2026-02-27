@@ -15,9 +15,12 @@
     "storage",
     "scripting",
     "sessions",
-    "alarms"
+    "alarms",
+    "favicon"
   ],
-  "optional_host_permissions": ["<all_urls>"],
+  "optional_host_permissions": [
+    "<all_urls>"
+  ],
   "background": {
     "service_worker": "src/background/index.ts"
   },
@@ -68,8 +71,12 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["_favicon/*"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "_favicon/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ]
 }

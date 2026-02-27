@@ -37,7 +37,7 @@ function setupPopupLifecycle(): void {
   }, true);
 
   document.addEventListener("keyup", (event) => {
-    if (event.key === "Alt") {
+    if (event.key === "Alt" || (!event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey)) {
       closePopupWindowSoon();
     }
   }, true);
@@ -89,7 +89,6 @@ async function loadTabs(): Promise<QuickSwitchPayload | null> {
       | undefined;
 
     if (stored && Array.isArray(stored.tabs) && stored.tabs.length > 0) {
-      await chrome.storage.session.remove(["QuickSwitchTabData"]);
       return {
         tabs: stored.tabs,
         activeTabId:

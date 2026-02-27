@@ -96,7 +96,6 @@ async function loadFlowData(): Promise<FlowPayload | null> {
       | undefined;
 
     if (stored && Array.isArray(stored.tabs) && stored.tabs.length > 0) {
-      await chrome.storage.session.remove(["FlowTabData"]);
       return {
         tabs: stored.tabs,
         groups: Array.isArray(stored.groups) ? stored.groups : [],

@@ -57,6 +57,24 @@ function renderHelpText(
   });
 }
 
+function cleanupGlobalListeners() {
+  document.removeEventListener("keydown", handlers.handleKeyDown, true);
+  document.removeEventListener("keyup", handlers.handleKeyUp, true);
+  document.removeEventListener("focus", focus.handleGlobalFocus, true);
+  document.removeEventListener("focusin", focus.handleGlobalFocusIn, true);
+  document.removeEventListener("keydown", focus.handleGlobalKeydown, true);
+  document.removeEventListener("keypress", focus.handleGlobalKeydown, true);
+  document.removeEventListener("keyup", focus.handleGlobalKeydown, true);
+  document.removeEventListener("input", focus.handleGlobalInput, true);
+  document.removeEventListener("beforeinput", focus.handleGlobalInput, true);
+  document.removeEventListener("textInput", focus.handleGlobalInput, true);
+  document.removeEventListener("click", focus.handleGlobalClick, true);
+  document.removeEventListener("mousedown", focus.handleGlobalClick, true);
+  document.removeEventListener("compositionstart", focus.handleGlobalComposition, true);
+  document.removeEventListener("compositionupdate", focus.handleGlobalComposition, true);
+  document.removeEventListener("compositionend", focus.handleGlobalComposition, true);
+}
+
 export function closeOverlay() {
   try {
     if (!state.isOverlayVisible) return;
@@ -82,7 +100,8 @@ export function closeOverlay() {
         state.isClosing = false;
 
         if (state.overlay) {
-          state.overlay.style.display = "none";
+          state.overlay.style.visibility = "hidden";
+          state.overlay.style.pointerEvents = "none";
         }
         state.isOverlayVisible = false;
 
@@ -94,61 +113,7 @@ export function closeOverlay() {
 
         // Cleanup
         state.lastFullscreenElement = null;
-        document.removeEventListener("keydown", handlers.handleKeyDown, true);
-        document.removeEventListener("keyup", handlers.handleKeyUp, true);
-
-        // Remove focus enforcement listeners
-        document.removeEventListener("focus", focus.handleGlobalFocus, true);
-        document.removeEventListener(
-          "focusin",
-          focus.handleGlobalFocusIn,
-          true
-        );
-        document.removeEventListener(
-          "keydown",
-          focus.handleGlobalKeydown,
-          true
-        );
-        document.removeEventListener(
-          "keypress",
-          focus.handleGlobalKeydown,
-          true
-        );
-        document.removeEventListener("keyup", focus.handleGlobalKeydown, true);
-        document.removeEventListener("input", focus.handleGlobalInput, true);
-        document.removeEventListener(
-          "beforeinput",
-          focus.handleGlobalInput,
-          true
-        );
-        document.removeEventListener(
-          "textInput",
-          focus.handleGlobalInput,
-          true
-        );
-        document.removeEventListener("click", focus.handleGlobalClick, true);
-        document.removeEventListener(
-          "mousedown",
-          focus.handleGlobalClick,
-          true
-        );
-
-        // Remove composition event listeners
-        document.removeEventListener(
-          "compositionstart",
-          focus.handleGlobalComposition,
-          true
-        );
-        document.removeEventListener(
-          "compositionupdate",
-          focus.handleGlobalComposition,
-          true
-        );
-        document.removeEventListener(
-          "compositionend",
-          focus.handleGlobalComposition,
-          true
-        );
+        cleanupGlobalListeners();
 
         if (state.intersectionObserver) {
           state.intersectionObserver.disconnect();
@@ -174,11 +139,8 @@ export function closeOverlay() {
     }
     // Try to remove listeners anyway
     try {
-      document.removeEventListener("keydown", handlers.handleKeyDown, true);
-      document.removeEventListener("keyup", handlers.handleKeyUp, true);
-      document.removeEventListener("focus", focus.handleGlobalFocus, true);
-      // ... assume others are removed or acceptable leak in error state
-    } catch {}
+      cleanupGlobalListeners();
+    } catch { }
   }
 }
 
@@ -322,26 +284,26 @@ export function toggleMute(tabId: number, btnElement: HTMLElement) {
         return;
       }
 
-        if (response && response.success) {
-          const isMuted = response.muted;
+      if (response && response.success) {
+        const isMuted = response.muted;
 
-          if (isMuted) {
-            btnElement.classList.add("muted");
-            updateToggleButton(btnElement, {
-              title: "Unmute tab",
-              pressed: true,
-              iconPath:
-                "M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z",
-            });
-          } else {
-            btnElement.classList.remove("muted");
-            updateToggleButton(btnElement, {
-              title: "Mute tab",
-              pressed: false,
-              iconPath:
-                "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z",
-            });
-          }
+        if (isMuted) {
+          btnElement.classList.add("muted");
+          updateToggleButton(btnElement, {
+            title: "Unmute tab",
+            pressed: true,
+            iconPath:
+              "M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73 4.27 3zM12 4L9.91 6.09 12 8.18V4z",
+          });
+        } else {
+          btnElement.classList.remove("muted");
+          updateToggleButton(btnElement, {
+            title: "Mute tab",
+            pressed: false,
+            iconPath:
+              "M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z",
+          });
+        }
 
         const tab = state.currentTabs.find((t) => t.id === tabId);
         if (tab) {

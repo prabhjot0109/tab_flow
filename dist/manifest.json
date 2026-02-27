@@ -15,7 +15,8 @@
     "storage",
     "scripting",
     "sessions",
-    "alarms"
+    "alarms",
+    "favicon"
   ],
   "optional_host_permissions": [
     "<all_urls>"
@@ -85,8 +86,8 @@
         "https://*/*"
       ],
       "resources": [
-        "assets/overlay-DiZnRlrK.js",
-        "assets/index.ts-4LhKo9do.js"
+        "assets/overlay-dfRoTaYB.js",
+        "assets/index.ts-DHN1OCL7.js"
       ],
       "use_dynamic_url": false
     }

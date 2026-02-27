@@ -1,45 +1,45 @@
 {
   "../../../@crx/manifest": {
-    "file": "assets/crx-manifest.js-B46NgUsk.js",
+    "file": "assets/crx-manifest.js-CVIn6H86.js",
     "name": "crx-manifest.js",
     "src": "../../../@crx/manifest",
     "isEntry": true
   },
-  "_index.ts-loader-BR3jklMS.js": {
-    "file": "assets/index.ts-loader-BR3jklMS.js",
-    "src": "_index.ts-loader-BR3jklMS.js"
+  "_index.ts-loader-Dwy9S6Aq.js": {
+    "file": "assets/index.ts-loader-Dwy9S6Aq.js",
+    "src": "_index.ts-loader-Dwy9S6Aq.js"
   },
   "_modulepreload-polyfill-B5Qt9EMX.js": {
     "file": "assets/modulepreload-polyfill-B5Qt9EMX.js",
     "name": "modulepreload-polyfill"
   },
-  "_overlay-DiZnRlrK.js": {
-    "file": "assets/overlay-DiZnRlrK.js",
+  "_overlay-dfRoTaYB.js": {
+    "file": "assets/overlay-dfRoTaYB.js",
     "name": "overlay"
   },
   "src/background/index.ts": {
-    "file": "assets/index.ts-Bal2kAyY.js",
+    "file": "assets/index.ts-D0_Kd7be.js",
     "name": "index.ts",
     "src": "src/background/index.ts",
     "isEntry": true
   },
   "src/content/index.ts": {
-    "file": "assets/index.ts-4LhKo9do.js",
+    "file": "assets/index.ts-DHN1OCL7.js",
     "name": "index.ts",
     "src": "src/content/index.ts",
     "isEntry": true,
     "imports": [
-      "_overlay-DiZnRlrK.js"
+      "_overlay-dfRoTaYB.js"
     ]
   },
   "src/flow/index.html": {
-    "file": "assets/Flow-BQaVmurE.js",
+    "file": "assets/Flow-1eCs9o9Z.js",
     "name": "Flow",
     "src": "src/flow/index.html",
     "isEntry": true,
     "imports": [
       "_modulepreload-polyfill-B5Qt9EMX.js",
-      "_overlay-DiZnRlrK.js"
+      "_overlay-dfRoTaYB.js"
     ]
   },
   "src/options/options.html": {
@@ -67,13 +67,13 @@
     ]
   },
   "src/quick-switch/index.html": {
-    "file": "assets/QuickSwitch-CZklw75n.js",
+    "file": "assets/QuickSwitch-vY7IauhQ.js",
     "name": "QuickSwitch",
     "src": "src/quick-switch/index.html",
     "isEntry": true,
     "imports": [
       "_modulepreload-polyfill-B5Qt9EMX.js",
-      "_overlay-DiZnRlrK.js"
+      "_overlay-dfRoTaYB.js"
     ]
   }
 }

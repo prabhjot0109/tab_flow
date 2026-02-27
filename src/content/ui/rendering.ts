@@ -20,6 +20,23 @@ function isListLayout(): boolean {
   );
 }
 
+// ============================================================================
+// FAVICON API HELPER
+// ============================================================================
+export function getFaviconUrl(url?: string, fallbackUrl?: string, size: number = 32): string | null {
+  if (url) {
+    try {
+      const favUrl = new URL(chrome.runtime.getURL("/_favicon/"));
+      favUrl.searchParams.set("pageUrl", url);
+      favUrl.searchParams.set("size", size.toString());
+      return favUrl.toString();
+    } catch {
+      // Ignore
+    }
+  }
+  return fallbackUrl || null;
+}
+
 export function shouldUseVirtualRendering(tabCount: number): boolean {
   return tabCount > VIRTUAL_RENDER_THRESHOLD && isListLayout();
 }
@@ -206,8 +223,7 @@ export function renderTabsVirtual(tabs: Tab[]) {
 
   const duration = performance.now() - startTime;
   log(
-    `[PERF] Virtual rendered ${endIndex - startIndex} of ${
-      tabs.length
+    `[PERF] Virtual rendered ${endIndex - startIndex} of ${tabs.length
     } tabs in ${duration.toFixed(2)}ms`
   );
 }
@@ -309,17 +325,7 @@ export function createTabCard(tab: Tab, index: number): HTMLElement {
 
   // Header favicon (only for screenshots)
   if (hasValidScreenshot) {
-    let faviconUrl = tab.favIconUrl;
-    if (!faviconUrl && tab.url) {
-      try {
-        const favUrl = new URL(chrome.runtime.getURL("/_favicon/"));
-        favUrl.searchParams.set("pageUrl", tab.url);
-        favUrl.searchParams.set("size", "16");
-        faviconUrl = favUrl.toString();
-      } catch {
-        /* ignore */
-      }
-    }
+    const faviconUrl = getFaviconUrl(tab.url, tab.favIconUrl, 16);
     if (faviconUrl) {
       faviconEl.src = faviconUrl;
       faviconEl.style.display = "";
@@ -407,18 +413,7 @@ export function createFaviconTile(tab: Tab): HTMLElement {
   ) as HTMLImageElement;
   const letter = faviconTile.querySelector(".favicon-letter") as HTMLElement;
 
-  // Use Chrome's favicon API if we have a URL
-  let faviconUrl = tab.favIconUrl;
-  if (!faviconUrl && tab.url) {
-    try {
-      const favUrl = new URL(chrome.runtime.getURL("/_favicon/"));
-      favUrl.searchParams.set("pageUrl", tab.url);
-      favUrl.searchParams.set("size", "32");
-      faviconUrl = favUrl.toString();
-    } catch {
-      /* ignore */
-    }
-  }
+  const faviconUrl = getFaviconUrl(tab.url, tab.favIconUrl, 32);
 
   if (faviconUrl) {
     favicon.src = faviconUrl;
@@ -666,13 +661,14 @@ export function createHistoryItem(
   // Favicon
   const faviconImg = document.createElement("img");
   faviconImg.className = "history-favicon";
-  try {
-    const favUrl = new URL(chrome.runtime.getURL("/_favicon/"));
-    favUrl.searchParams.set("pageUrl", url);
-    favUrl.searchParams.set("size", "16");
-    faviconImg.src = favUrl.toString();
-  } catch {
-    // Ignore
+  const faviconUrl = getFaviconUrl(url, undefined, 16);
+  if (faviconUrl) {
+    faviconImg.src = faviconUrl;
+    faviconImg.onerror = () => {
+      faviconImg.style.display = "none";
+    };
+  } else {
+    faviconImg.style.display = "none";
   }
 
   const content = document.createElement("div");
